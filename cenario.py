@@ -10,8 +10,13 @@ pygame.init()
 LARGURA = 1000
 ALTURA = 600
 
-TELA = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("Cenário Infinito")
+TELA = pygame.display.set_mode(
+    (LARGURA, ALTURA)
+)
+
+pygame.display.set_caption(
+    "Cenário Infinito"
+)
 
 FPS = 60
 clock = pygame.time.Clock()
@@ -25,31 +30,34 @@ class Cenario:
 
     def __init__(self):
 
-        # ----------------------------------------------------
-        # TAMANHO DE CADA CENÁRIO
-        # ----------------------------------------------------
+        # ====================================================
+        # TAMANHO DO CENÁRIO
+        # ====================================================
 
         self.largura = LARGURA
         self.altura = ALTURA
 
 
-        # ----------------------------------------------------
-        # CHÃO
-        # ----------------------------------------------------
+        # ====================================================
+        # LIMITE INICIAL DO MUNDO
+        # ====================================================
 
-        self.altura_chao = 100
+        # O mundo começa aqui.
+        #
+        # Não existe cenário antes dessa posição.
 
-        self.y_chao = (
-            ALTURA - self.altura_chao
-        )
+        self.inicio_mundo = 0
 
 
         # ====================================================
-        # CRIAR FUNDO
+        # FUNDO
         # ====================================================
 
         self.fundo = pygame.Surface(
-            (self.largura, self.altura)
+            (
+                self.largura,
+                self.altura
+            )
         )
 
         self.fundo.fill(
@@ -57,9 +65,9 @@ class Cenario:
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # NUVENS
-        # ----------------------------------------------------
+        # ====================================================
 
         pygame.draw.circle(
             self.fundo,
@@ -83,9 +91,9 @@ class Cenario:
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # MONTANHAS
-        # ----------------------------------------------------
+        # ====================================================
 
         pygame.draw.polygon(
             self.fundo,
@@ -119,11 +127,21 @@ class Cenario:
 
 
         # ====================================================
-        # CRIAR CHÃO
+        # CHÃO
         # ====================================================
 
+        self.altura_chao = 100
+
+        self.y_chao = (
+            ALTURA - self.altura_chao
+        )
+
+
         self.chao = pygame.Surface(
-            (self.largura, self.altura_chao)
+            (
+                self.largura,
+                self.altura_chao
+            )
         )
 
         self.chao.fill(
@@ -131,9 +149,9 @@ class Cenario:
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # GRAMA
-        # ----------------------------------------------------
+        # ====================================================
 
         pygame.draw.rect(
             self.chao,
@@ -147,9 +165,9 @@ class Cenario:
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # DETALHES DO CHÃO
-        # ----------------------------------------------------
+        # ====================================================
 
         for x in range(
             20,
@@ -165,19 +183,46 @@ class Cenario:
             )
 
 
+        # ====================================================
+        # POSIÇÃO DA CÂMERA
+        # ====================================================
+
+        self.camera_x = 0
+
+
     # ========================================================
-    # DESENHAR
+    # MOVER CÂMERA
     # ========================================================
 
-    def desenhar(self, tela, camera_x):
+    def mover(self, velocidade):
+
+        self.camera_x += velocidade
+
 
         # ----------------------------------------------------
-        # DESENHAR FUNDO
+        # LIMITE DO INÍCIO DO MUNDO
         # ----------------------------------------------------
+
+        if self.camera_x < self.inicio_mundo:
+
+            self.camera_x = self.inicio_mundo
+
+
+    # ========================================================
+    # DESENHAR FUNDO
+    # ========================================================
+
+    def desenhar_fundo(self, tela):
 
         inicio = int(
-            camera_x // self.largura
+            self.camera_x
+            // self.largura
         )
+
+
+        # ----------------------------------------------------
+        # REPETIR O FUNDO
+        # ----------------------------------------------------
 
         for i in range(
             inicio,
@@ -186,7 +231,7 @@ class Cenario:
 
             x = (
                 i * self.largura
-                - camera_x
+                - self.camera_x
             )
 
             tela.blit(
@@ -195,8 +240,20 @@ class Cenario:
             )
 
 
+    # ========================================================
+    # DESENHAR CHÃO
+    # ========================================================
+
+    def desenhar_chao(self, tela):
+
+        inicio = int(
+            self.camera_x
+            // self.largura
+        )
+
+
         # ----------------------------------------------------
-        # DESENHAR CHÃO
+        # REPETIR O CHÃO
         # ----------------------------------------------------
 
         for i in range(
@@ -206,7 +263,7 @@ class Cenario:
 
             x = (
                 i * self.largura
-                - camera_x
+                - self.camera_x
             )
 
             tela.blit(
@@ -218,41 +275,22 @@ class Cenario:
             )
 
 
+    # ========================================================
+    # DESENHAR CENÁRIO
+    # ========================================================
+
+    def desenhar(self, tela):
+
+        self.desenhar_fundo(tela)
+
+        self.desenhar_chao(tela)
+
+
 # ============================================================
 # CRIAR CENÁRIO
 # ============================================================
 
 cenario = Cenario()
-
-
-# ============================================================
-# PERSONAGEM
-# ============================================================
-
-personagem = pygame.Rect(
-    150,
-    cenario.y_chao - 80,
-    50,
-    80
-)
-
-velocidade = 5
-
-
-# ============================================================
-# POSIÇÃO DO PERSONAGEM NO MUNDO
-# ============================================================
-
-# Esta é a posição real do personagem no mapa.
-
-player_world_x = 150
-
-
-# ============================================================
-# CÂMERA
-# ============================================================
-
-camera_x = 0
 
 
 # ============================================================
@@ -275,105 +313,27 @@ while rodando:
 
 
     # ========================================================
-    # TECLAS
+    # MOVIMENTO DO CENÁRIO
     # ========================================================
 
     teclas = pygame.key.get_pressed()
 
 
-    # ========================================================
-    # MOVIMENTO PARA DIREITA
-    # ========================================================
+    if teclas[pygame.K_RIGHT]:
 
-    if teclas[pygame.K_RIGHT] or teclas[pygame.K_d]:
-
-        player_world_x += velocidade
+        cenario.mover(5)
 
 
-    # ========================================================
-    # MOVIMENTO PARA ESQUERDA
-    # ========================================================
+    if teclas[pygame.K_LEFT]:
 
-    if teclas[pygame.K_LEFT] or teclas[pygame.K_a]:
-
-        player_world_x -= velocidade
-
-
-    # ========================================================
-    # LIMITE ABSOLUTO DO MAPA
-    # ========================================================
-
-    # O mundo começa em X = 150.
-    #
-    # Portanto, nunca podemos voltar para antes desse ponto.
-
-    if player_world_x < 150:
-
-        player_world_x = 150
-
-
-    # ========================================================
-    # CÂMERA
-    # ========================================================
-
-    # A câmera acompanha o personagem.
-
-    camera_x = (
-        player_world_x - 300
-    )
-
-
-    # --------------------------------------------------------
-    # A câmera nunca mostra uma área antes do começo do mapa.
-    # --------------------------------------------------------
-
-    if camera_x < 0:
-
-        camera_x = 0
-
-
-    # ========================================================
-    # POSIÇÃO DO PERSONAGEM NA TELA
-    # ========================================================
-
-    personagem.x = int(
-        player_world_x - camera_x
-    )
-
-
-    # ========================================================
-    # LIMITES VISUAIS DO PERSONAGEM
-    # ========================================================
-
-    if personagem.left < 0:
-
-        personagem.left = 0
-
-
-    if personagem.right > LARGURA:
-
-        personagem.right = LARGURA
+        cenario.mover(-5)
 
 
     # ========================================================
     # DESENHAR
     # ========================================================
 
-    cenario.desenhar(
-        TELA,
-        camera_x
-    )
-
-
-    # ========================================================
-    # PERSONAGEM
-    # ========================================================
-
-    pygame.draw.rect(
-        TELA,
-        (200, 50, 50),
-        personagem
-    )
+    cenario.desenhar(TELA)
 
 
     # ========================================================
