@@ -13,11 +13,34 @@ class Inimigo:
         self.velocidade = 2
         self.derrotado = False
 
-    def atualizar(self):
+    def atualizar(self, pedras=(), buracos=(), areas_livres=(), outros=()):
         if self.derrotado:
             return
 
+        x_anterior = self.rect.x
         self.rect.x += self.velocidade
+
+        perto_de_buraco = any(
+            self.rect.right + 8 > buraco.rect.left
+            and self.rect.left - 8 < buraco.rect.right
+            for buraco in buracos
+        )
+        colidiu_com_objeto = (
+            any(self.rect.colliderect(pedra.rect) for pedra in pedras)
+            or any(self.rect.colliderect(area) for area in areas_livres)
+            or perto_de_buraco
+            or any(
+                outro is not self
+                and not outro.derrotado
+                and self.rect.colliderect(outro.rect)
+                for outro in outros
+            )
+        )
+
+        if colidiu_com_objeto:
+            self.rect.x = x_anterior
+            self.velocidade *= -1
+            return
 
         if self.rect.left <= self.limite_esquerdo:
             self.rect.left = self.limite_esquerdo
@@ -129,7 +152,12 @@ class Inimigos:
             self.proxima_posicao += random.randint(800, 1100)
 
         for inimigo in self.inimigos:
-            inimigo.atualizar()
+            inimigo.atualizar(
+                pedras,
+                buracos,
+                self.areas_livres,
+                self.inimigos
+            )
 
     def verificar_colisao(self, personagem, rect_anterior):
         """Retorna 'derrotou', 'atingido' ou None conforme o contato."""

@@ -104,6 +104,8 @@ class Perguntas:
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
                         return None
+                    if evento.key == pygame.K_TAB:
+                        return "reiniciar"
 
                     if evento.key in teclas:
                         return teclas[evento.key] == correta
@@ -149,7 +151,7 @@ class Perguntas:
                 tela.blit(texto, texto.get_rect(center=botao.center))
 
             instrucao = fonte_instrucao.render(
-                "Clique em uma resposta ou pressione A, B, C ou D",
+                "Responda com A, B, C ou D  |  TAB reinicia o jogo",
                 True,
                 (190, 200, 215)
             )
