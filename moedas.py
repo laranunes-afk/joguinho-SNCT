@@ -2,6 +2,8 @@ import random
 
 import pygame
 
+from recursos import carregar_imagem
+
 
 class Moeda:
     """Moeda coletável posicionada próxima ao chão."""
@@ -13,28 +15,26 @@ class Moeda:
             28,
             28
         )
+        imagem_original = carregar_imagem(
+            "Lupa.png",
+            fundo_transparente=True
+        )
+        limites = pygame.mask.from_surface(
+            imagem_original
+        ).get_bounding_rects()
+        area_lupa = limites[0].unionall(limites)
+        imagem_recortada = imagem_original.subsurface(area_lupa).copy()
+        self.imagem = pygame.transform.scale(imagem_recortada, (28, 28))
 
     def desenhar(self, tela, camera_x):
         moeda_na_tela = self.rect.copy()
         moeda_na_tela.x -= int(camera_x)
 
-        pygame.draw.ellipse(
-            tela,
-            (255, 205, 35),
-            moeda_na_tela
-        )
-        pygame.draw.ellipse(
-            tela,
-            (255, 235, 95),
-            moeda_na_tela.inflate(-8, -5),
-            3
-        )
-        pygame.draw.line(
-            tela,
-            (220, 155, 20),
-            (moeda_na_tela.centerx, moeda_na_tela.top + 7),
-            (moeda_na_tela.centerx, moeda_na_tela.bottom - 7),
-            2
+        tela.blit(
+            self.imagem,
+            self.imagem.get_rect(
+                midbottom=(moeda_na_tela.centerx, moeda_na_tela.bottom + 15)
+            )
         )
 
 
@@ -48,7 +48,7 @@ class Moedas:
         self.moedas = []
         self.proxima_posicao = random.randint(220, 360)
 
-    def atualizar(self, camera_x, pedras):
+    def atualizar(self, camera_x, pedras, buracos=()):
         limite_geracao = camera_x + self.largura_tela * 2
 
         while self.proxima_posicao < limite_geracao:
@@ -65,8 +65,12 @@ class Moedas:
                 moeda.rect.inflate(70, 30).colliderect(pedra.rect)
                 for pedra in pedras
             )
+            sobre_buraco = any(
+                moeda.rect.inflate(20, 20).colliderect(buraco.rect)
+                for buraco in buracos
+            )
 
-            if not perto_de_checkpoint and not perto_de_pedra:
+            if not perto_de_checkpoint and not perto_de_pedra and not sobre_buraco:
                 self.moedas.append(moeda)
 
             self.proxima_posicao += random.randint(230, 430)

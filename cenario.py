@@ -1,5 +1,7 @@
 import pygame
 
+from recursos import carregar_imagem
+
 
 class Cenario:
     """Cenário infinito com aparência própria para cada fase."""
@@ -53,24 +55,11 @@ class Cenario:
             pygame.draw.circle(self.chao, (75, 45, 25), (x, 55), 5)
 
     def _criar_deserto(self):
-        self.fundo.fill((238, 178, 92))
-
-        pygame.draw.circle(
-            self.fundo,
-            (255, 225, 90),
-            (self.largura - 160, 120),
-            65
+        fundo_deserto = carregar_imagem(
+            "pixilart-drawing (1).png",
+            (self.largura, self.y_chao)
         )
-        pygame.draw.ellipse(
-            self.fundo,
-            (215, 145, 65),
-            (-180, self.y_chao - 170, self.largura // 2 + 300, 260)
-        )
-        pygame.draw.ellipse(
-            self.fundo,
-            (225, 158, 73),
-            (self.largura // 3, self.y_chao - 140, self.largura, 230)
-        )
+        self.fundo.blit(fundo_deserto, (0, 0))
 
         self.chao.fill((205, 135, 55))
         pygame.draw.rect(self.chao, (235, 180, 85), (0, 0, self.largura, 18))

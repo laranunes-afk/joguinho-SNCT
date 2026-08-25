@@ -1,5 +1,7 @@
 import pygame
 
+from recursos import carregar_imagem
+
 
 class Personagem:
 
@@ -41,7 +43,32 @@ class Personagem:
         # IMAGEM TEMPORÁRIA
         # ====================================================
 
-        self.cor = (200, 50, 50)
+        sprites = carregar_imagem(
+            "Personagem NÃO PRONTA.png",
+            fundo_transparente=True
+        )
+        self.quadros_direita = []
+
+        # A primeira linha da spritesheet contém oito quadros de caminhada.
+        for indice in range(8):
+            quadro = sprites.subsurface(
+                pygame.Rect(25 + indice * 175, 85, 190, 245)
+            )
+            quadro_redimensionado = pygame.transform.scale(
+                quadro,
+                (largura, altura)
+            )
+            quadro_redimensionado.set_colorkey((0, 0, 0))
+            self.quadros_direita.append(quadro_redimensionado)
+
+        self.quadros_esquerda = [
+            pygame.transform.flip(quadro, True, False)
+            for quadro in self.quadros_direita
+        ]
+        self.indice_quadro = 0
+        self.ultimo_quadro = pygame.time.get_ticks()
+        self.em_movimento = False
+        self.virado_para_esquerda = False
 
 
     # ========================================================
@@ -51,6 +78,7 @@ class Personagem:
     def mover(self):
 
         teclas = pygame.key.get_pressed()
+        deslocamento_x = 0
 
 
         # ----------------------------------------------------
@@ -62,7 +90,7 @@ class Personagem:
             or teclas[pygame.K_LEFT]
         ):
 
-            self.rect.x -= self.velocidade
+            deslocamento_x -= self.velocidade
 
 
         # ----------------------------------------------------
@@ -74,7 +102,13 @@ class Personagem:
             or teclas[pygame.K_RIGHT]
         ):
 
-            self.rect.x += self.velocidade
+            deslocamento_x += self.velocidade
+
+        self.rect.x += deslocamento_x
+        self.em_movimento = deslocamento_x != 0
+
+        if deslocamento_x != 0:
+            self.virado_para_esquerda = deslocamento_x < 0
 
 
     # ========================================================
@@ -102,7 +136,7 @@ class Personagem:
     # GRAVIDADE
     # ========================================================
 
-    def aplicar_gravidade(self, y_chao):
+    def aplicar_gravidade(self, y_chao, esta_sobre_buraco=False):
 
         self.velocidade_y += self.gravidade
 
@@ -115,7 +149,7 @@ class Personagem:
         # COLISÃO COM O CHÃO
         # ----------------------------------------------------
 
-        if self.rect.bottom >= y_chao:
+        if self.rect.bottom >= y_chao and not esta_sobre_buraco:
 
             self.rect.bottom = y_chao
 
@@ -128,25 +162,53 @@ class Personagem:
     # ATUALIZAR PERSONAGEM
     # ========================================================
 
-    def atualizar(self, y_chao):
+    def atualizar(self, y_chao, verificar_buraco=None):
 
         self.mover()
+
+        esta_sobre_buraco = (
+            verificar_buraco(self)
+            if verificar_buraco is not None
+            else False
+        )
+
+        if esta_sobre_buraco:
+            self.no_chao = False
 
         self.pular()
 
         self.aplicar_gravidade(
-            y_chao
+            y_chao,
+            esta_sobre_buraco
         )
+
+        self.atualizar_animacao()
+
+
+    def atualizar_animacao(self):
+        """Avança os quadros enquanto a personagem estiver caminhando."""
+        if not self.em_movimento:
+            self.indice_quadro = 0
+            return
+
+        agora = pygame.time.get_ticks()
+        if agora - self.ultimo_quadro >= 90:
+            self.indice_quadro = (
+                self.indice_quadro + 1
+            ) % len(self.quadros_direita)
+            self.ultimo_quadro = agora
 
 
     # ========================================================
     # DESENHAR PERSONAGEM
     # ========================================================
 
-    def desenhar(self, tela):
-
-        pygame.draw.rect(
-            tela,
-            self.cor,
-            self.rect
+    def desenhar(self, tela, camera_x=0):
+        personagem_na_tela = self.rect.copy()
+        personagem_na_tela.x -= int(camera_x)
+        quadros = (
+            self.quadros_esquerda
+            if self.virado_para_esquerda
+            else self.quadros_direita
         )
+        tela.blit(quadros[self.indice_quadro], personagem_na_tela)

@@ -50,7 +50,7 @@ def criar_fase(numero_fase, largura, altura):
         cenario.y_chao,
         areas_livres
     )
-    moedas.atualizar(0, obstaculos.pedras)
+    moedas.atualizar(0, obstaculos.pedras, obstaculos.buracos)
 
     return cenario, personagem, checkpoints, obstaculos, moedas
 
@@ -114,7 +114,7 @@ def desenhar_hud(
     tela.blit(texto_cronometro, rect_cronometro)
 
     texto_moedas = fonte_moedas.render(
-        f"MOEDAS: {moedas_coletadas}",
+        f"LUPAS: {moedas_coletadas}",
         True,
         (255, 215, 55)
     )
@@ -179,7 +179,10 @@ def jogo():
             break
 
         x_anterior = personagem.rect.x
-        personagem.atualizar(cenario.y_chao)
+        personagem.atualizar(
+            cenario.y_chao,
+            obstaculos.personagem_esta_sobre_buraco
+        )
 
         if personagem.rect.left < cenario.camera_x:
             personagem.rect.left = cenario.camera_x
@@ -190,7 +193,8 @@ def jogo():
         obstaculos.atualizar(cenario.camera_x)
         moedas.atualizar(
             cenario.camera_x,
-            obstaculos.pedras
+            obstaculos.pedras,
+            obstaculos.buracos
         )
         moedas_coletadas += moedas.coletar(personagem)
         deve_retornar = False
@@ -248,7 +252,11 @@ def jogo():
         if mudou_fase:
             continue
 
-        if obstaculos.colidiu_com(personagem):
+        if personagem.rect.top >= altura:
+            # Ao cair, retorna ao início ou ao último checkpoint ativado.
+            deve_retornar = True
+            moedas_coletadas = max(0, moedas_coletadas - 2)
+        elif obstaculos.colidiu_com(personagem):
             deve_retornar = True
             moedas_coletadas = max(0, moedas_coletadas - 2)
 
@@ -280,13 +288,7 @@ def jogo():
                 largura
             )
 
-        personagem_na_tela = personagem.rect.copy()
-        personagem_na_tela.x -= int(cenario.camera_x)
-        pygame.draw.rect(
-            tela,
-            personagem.cor,
-            personagem_na_tela
-        )
+        personagem.desenhar(tela, cenario.camera_x)
 
         segundos_decorridos = desenhar_hud(
             tela,

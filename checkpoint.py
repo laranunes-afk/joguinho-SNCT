@@ -1,5 +1,7 @@
 import pygame
 
+from recursos import carregar_imagem
+
 
 class Checkpoint:
     """Marca um novo ponto de retorno para o personagem."""
@@ -25,6 +27,11 @@ class Checkpoint:
         )
 
         self.posicao_retorno = x + 80
+        self.imagem = carregar_imagem(
+            "Checkpoint.png",
+            (140, 140),
+            fundo_transparente=True
+        )
 
     def foi_alcancado(self, personagem):
         return (
@@ -41,32 +48,10 @@ class Checkpoint:
         if x_na_tela < -80 or x_na_tela > largura_tela + 80:
             return
 
-        topo_mastro = self.y_chao - 150
-
-        pygame.draw.rect(
-            tela,
-            (210, 210, 215),
-            (x_na_tela, topo_mastro, 8, 150)
+        rect_imagem = self.imagem.get_rect(
+            midbottom=(x_na_tela + 45, self.y_chao)
         )
+        tela.blit(self.imagem, rect_imagem)
 
-        cor_bandeira = (
-            (50, 200, 90)
-            if self.ativado
-            else (245, 190, 45)
-        )
-
-        pygame.draw.polygon(
-            tela,
-            cor_bandeira,
-            [
-                (x_na_tela + 8, topo_mastro),
-                (x_na_tela + 70, topo_mastro + 25),
-                (x_na_tela + 8, topo_mastro + 50),
-            ]
-        )
-
-        pygame.draw.ellipse(
-            tela,
-            (80, 80, 85),
-            (x_na_tela - 12, self.y_chao - 12, 32, 12)
-        )
+        if self.ativado:
+            pygame.draw.circle(tela, (50, 200, 90), (x_na_tela + 42, self.y_chao - 130), 10)
