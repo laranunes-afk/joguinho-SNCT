@@ -2,6 +2,7 @@ import pygame
 
 from cenario import Cenario
 from checkpoint import Checkpoint
+from inimigos import Inimigos
 from menu import tela_inicial
 from moedas import Moedas
 from obstaculos import Obstaculos
@@ -45,6 +46,11 @@ def criar_fase(numero_fase, largura, altura):
         cenario.y_chao,
         areas_livres
     )
+    inimigos = Inimigos(
+        largura,
+        cenario.y_chao,
+        areas_livres
+    )
 
     moedas = Moedas(
         largura,
@@ -53,7 +59,7 @@ def criar_fase(numero_fase, largura, altura):
     )
     moedas.atualizar(0, obstaculos.pedras, obstaculos.buracos)
 
-    return cenario, personagem, checkpoints, obstaculos, moedas
+    return cenario, personagem, checkpoints, obstaculos, inimigos, moedas
 
 
 def reposicionar(personagem, cenario, ponto_retorno_x):
@@ -156,7 +162,7 @@ def jogo():
     perguntas = Perguntas()
     numero_fase = 1
 
-    cenario, personagem, checkpoints, obstaculos, moedas = criar_fase(
+    cenario, personagem, checkpoints, obstaculos, inimigos, moedas = criar_fase(
         numero_fase,
         largura,
         altura
@@ -180,6 +186,7 @@ def jogo():
             break
 
         x_anterior = personagem.rect.x
+        rect_anterior = personagem.rect.copy()
         personagem.atualizar(
             cenario.y_chao,
             obstaculos.personagem_esta_sobre_buraco
@@ -192,6 +199,11 @@ def jogo():
             personagem.rect.right = cenario.camera_x + largura
 
         obstaculos.atualizar(cenario.camera_x)
+        inimigos.atualizar(
+            cenario.camera_x,
+            obstaculos.pedras,
+            obstaculos.buracos
+        )
         moedas.atualizar(
             cenario.camera_x,
             obstaculos.pedras,
@@ -235,6 +247,7 @@ def jogo():
                                 personagem,
                                 checkpoints,
                                 obstaculos,
+                                inimigos,
                                 moedas
                             ) = criar_fase(
                                 numero_fase,
@@ -262,6 +275,16 @@ def jogo():
             deve_retornar = True
             moedas_coletadas = max(0, moedas_coletadas - 2)
 
+        resultado_inimigo = inimigos.verificar_colisao(
+            personagem,
+            rect_anterior
+        )
+        if resultado_inimigo == "derrotou":
+            moedas_coletadas += 5
+        elif resultado_inimigo == "atingido":
+            deve_retornar = True
+            moedas_coletadas = max(0, moedas_coletadas - 2)
+
         if deve_retornar:
             reposicionar(
                 personagem,
@@ -282,6 +305,7 @@ def jogo():
         cenario.desenhar(tela)
         moedas.desenhar(tela, cenario.camera_x)
         obstaculos.desenhar(tela, cenario.camera_x)
+        inimigos.desenhar(tela, cenario.camera_x)
 
         for checkpoint in checkpoints:
             checkpoint.desenhar(

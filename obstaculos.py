@@ -45,23 +45,28 @@ class Buraco:
     def __init__(self, x, y_chao):
         largura = random.randint(110, 150)
         self.rect = pygame.Rect(x, y_chao, largura, 2000)
-
-    def desenhar(self, tela, camera_x, altura_tela):
-        buraco_na_tela = pygame.Rect(
-            self.rect.x - int(camera_x),
-            self.rect.y,
-            self.rect.width,
-            altura_tela - self.rect.y
+        imagem_original = carregar_imagem(
+            "Buraco.png",
+            fundo_transparente=True
+        )
+        limites = pygame.mask.from_surface(
+            imagem_original
+        ).get_bounding_rects()
+        area_buraco = limites[0].unionall(limites)
+        imagem_recortada = imagem_original.subsurface(area_buraco).copy()
+        self.imagem = pygame.transform.scale(
+            imagem_recortada,
+            (largura, 42)
         )
 
-        pygame.draw.rect(tela, (35, 30, 28), buraco_na_tela)
-        pygame.draw.line(
-            tela,
-            (55, 45, 35),
-            buraco_na_tela.topleft,
-            buraco_na_tela.topright,
-            4
+    def desenhar(self, tela, camera_x):
+        rect_imagem = self.imagem.get_rect(
+            midtop=(
+                self.rect.centerx - int(camera_x),
+                self.rect.y
+            )
         )
+        tela.blit(self.imagem, rect_imagem)
 
 
 class Obstaculos:
@@ -154,4 +159,4 @@ class Obstaculos:
                 buraco.rect.right > limite_esquerdo
                 and buraco.rect.left < limite_direito
             ):
-                buraco.desenhar(tela, camera_x, tela.get_height())
+                buraco.desenhar(tela, camera_x)

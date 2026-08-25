@@ -12,7 +12,8 @@ class Cenario:
         self.fase = fase
         self.inicio_mundo = 0
         self.camera_x = 0
-        self.altura_chao = 100
+        # Na fase desértica, o chão começa abaixo do meio da tela.
+        self.altura_chao = int(altura * 0.35) if fase == 2 else 100
         self.y_chao = self.altura - self.altura_chao
 
         self.fundo = pygame.Surface((self.largura, self.altura))
@@ -57,21 +58,24 @@ class Cenario:
     def _criar_deserto(self):
         fundo_deserto = carregar_imagem(
             "pixilart-drawing (1).png",
-            (self.largura, self.y_chao)
+            (self.largura, self.altura)
         )
         self.fundo.blit(fundo_deserto, (0, 0))
 
-        self.chao.fill((205, 135, 55))
-        pygame.draw.rect(self.chao, (235, 180, 85), (0, 0, self.largura, 18))
-
-        for x in range(30, self.largura, 70):
-            pygame.draw.line(
-                self.chao,
-                (175, 110, 45),
-                (x, 55),
-                (x + 18, 55),
-                3
-            )
+        imagem_original = carregar_imagem(
+            "Chão.png",
+            fundo_transparente=True
+        )
+        limites = pygame.mask.from_surface(
+            imagem_original
+        ).get_bounding_rects()
+        area_chao = limites[0].unionall(limites)
+        imagem_chao = imagem_original.subsurface(area_chao).copy()
+        imagem_chao = pygame.transform.scale(
+            imagem_chao,
+            (self.largura, self.altura_chao)
+        )
+        self.chao.blit(imagem_chao, (0, 0))
 
     def _criar_noite_gelada(self):
         self.fundo.fill((24, 38, 78))

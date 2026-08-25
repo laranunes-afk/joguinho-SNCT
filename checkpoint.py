@@ -27,8 +27,12 @@ class Checkpoint:
         )
 
         self.posicao_retorno = x + 80
+        self.imagem_inativa = self._carregar_bandeira("Checkpoint.png")
+        self.imagem_ativa = self._carregar_bandeira("CheckPoint-Verde.png")
+
+    def _carregar_bandeira(self, nome_arquivo):
         imagem_original = carregar_imagem(
-            "Checkpoint.png",
+            nome_arquivo,
             fundo_transparente=True
         )
         limites = pygame.mask.from_surface(
@@ -36,7 +40,7 @@ class Checkpoint:
         ).get_bounding_rects()
         area_bandeira = limites[0].unionall(limites)
         imagem_recortada = imagem_original.subsurface(area_bandeira).copy()
-        self.imagem = pygame.transform.scale(imagem_recortada, (75, 115))
+        return pygame.transform.scale(imagem_recortada, (75, 115))
 
     def foi_alcancado(self, personagem):
         return (
@@ -53,15 +57,8 @@ class Checkpoint:
         if x_na_tela < -80 or x_na_tela > largura_tela + 80:
             return
 
-        rect_imagem = self.imagem.get_rect(
+        imagem = self.imagem_ativa if self.ativado else self.imagem_inativa
+        rect_imagem = imagem.get_rect(
             midbottom=(x_na_tela + 25, self.y_chao)
         )
-        tela.blit(self.imagem, rect_imagem)
-
-        if self.ativado:
-            pygame.draw.circle(
-                tela,
-                (50, 200, 90),
-                (rect_imagem.centerx, rect_imagem.top + 12),
-                10
-            )
+        tela.blit(imagem, rect_imagem)
