@@ -7,6 +7,7 @@ from moedas import Moedas
 from obstaculos import Obstaculos
 from personagem import Personagem
 from perguntas import Perguntas
+from tela_final import TelaFinal
 
 
 def criar_fase(numero_fase, largura, altura):
@@ -221,11 +222,12 @@ def jogo():
                                     pygame.time.get_ticks() - tempo_inicio
                                 ) // 1000
 
-                            perguntas.mostrar_vitoria(
+                            jogar_novamente = TelaFinal().mostrar(
                                 tela,
-                                segundos_decorridos
+                                segundos_decorridos,
+                                moedas_coletadas
                             )
-                            rodando = False
+                            return jogar_novamente
                         else:
                             numero_fase += 1
                             (
@@ -304,6 +306,8 @@ def jogo():
         pygame.display.flip()
         clock.tick(fps)
 
+    return False
+
 
 def main():
     """Abre o menu e inicia o jogo quando JOGAR for clicado."""
@@ -311,7 +315,10 @@ def main():
     pygame.init()
 
     if tela_inicial():
-        jogo()
+        jogar_novamente = True
+
+        while jogar_novamente:
+            jogar_novamente = jogo()
 
     pygame.quit()
 

@@ -51,6 +51,21 @@ class Moedas:
     def atualizar(self, camera_x, pedras, buracos=()):
         limite_geracao = camera_x + self.largura_tela * 2
 
+        def esta_sobre_buraco(moeda):
+            area_moeda = moeda.rect.inflate(20, 20)
+            return any(
+                area_moeda.right > buraco.rect.left
+                and area_moeda.left < buraco.rect.right
+                for buraco in buracos
+            )
+
+        # Remove itens que possam ter sido criados antes de um novo buraco.
+        self.moedas = [
+            moeda
+            for moeda in self.moedas
+            if not esta_sobre_buraco(moeda)
+        ]
+
         while self.proxima_posicao < limite_geracao:
             moeda = Moeda(
                 self.proxima_posicao,
@@ -65,10 +80,7 @@ class Moedas:
                 moeda.rect.inflate(70, 30).colliderect(pedra.rect)
                 for pedra in pedras
             )
-            sobre_buraco = any(
-                moeda.rect.inflate(20, 20).colliderect(buraco.rect)
-                for buraco in buracos
-            )
+            sobre_buraco = esta_sobre_buraco(moeda)
 
             if not perto_de_checkpoint and not perto_de_pedra and not sobre_buraco:
                 self.moedas.append(moeda)

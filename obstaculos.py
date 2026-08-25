@@ -92,10 +92,24 @@ class Obstaculos:
             )
             self.proximo_eh_buraco = False
 
-            obstaculo_em_area_livre = any(
-                obstaculo.rect.colliderect(area)
-                for area in self.areas_livres
-            )
+            if isinstance(obstaculo, Buraco):
+                # O rect do buraco começa abaixo do chão; para proteger os
+                # checkpoints, sua área segura precisa considerar a superfície.
+                area_do_buraco = pygame.Rect(
+                    obstaculo.rect.x,
+                    0,
+                    obstaculo.rect.width,
+                    self.y_chao
+                )
+                obstaculo_em_area_livre = any(
+                    area_do_buraco.colliderect(area)
+                    for area in self.areas_livres
+                )
+            else:
+                obstaculo_em_area_livre = any(
+                    obstaculo.rect.colliderect(area)
+                    for area in self.areas_livres
+                )
 
             if not obstaculo_em_area_livre:
                 if isinstance(obstaculo, Buraco):
