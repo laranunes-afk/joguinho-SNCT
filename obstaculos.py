@@ -9,6 +9,7 @@ class Pedra:
     """Pedra posicionada no chão do cenário."""
 
     def __init__(self, x, y_chao):
+        """Cria uma pedra de tamanho aleatório apoiada no chão."""
         largura = random.randint(60, 80)
         altura = random.randint(45, 60)
 
@@ -33,6 +34,7 @@ class Pedra:
         )
 
     def desenhar(self, tela, camera_x):
+        """Desenha a pedra considerando o deslocamento da câmera."""
         pedra_na_tela = self.rect.copy()
         pedra_na_tela.x -= int(camera_x)
 
@@ -43,6 +45,7 @@ class Buraco:
     """Abertura no chão que faz o personagem cair."""
 
     def __init__(self, x, y_chao):
+        """Cria um buraco com largura aleatória a partir do nível do chão."""
         largura = random.randint(110, 150)
         self.rect = pygame.Rect(x, y_chao, largura, 2000)
         imagem_original = carregar_imagem(
@@ -60,6 +63,7 @@ class Buraco:
         )
 
     def desenhar(self, tela, camera_x):
+        """Desenha a abertura do buraco na posição visível."""
         rect_imagem = self.imagem.get_rect(
             midtop=(
                 self.rect.centerx - int(camera_x),
@@ -73,6 +77,7 @@ class Obstaculos:
     """Cria e controla pedras e buracos espalhados pelo cenário infinito."""
 
     def __init__(self, largura_tela, y_chao, areas_livres=None):
+        """Prepara a geração alternada de pedras e buracos."""
         self.largura_tela = largura_tela
         self.y_chao = y_chao
         self.pedras = []
@@ -85,6 +90,7 @@ class Obstaculos:
         self.atualizar(0)
 
     def atualizar(self, camera_x):
+        """Gera obstáculos à frente da câmera sem bloquear checkpoints."""
         limite_geracao = camera_x + self.largura_tela * 2
 
         while self.proxima_posicao < limite_geracao:
@@ -126,19 +132,24 @@ class Obstaculos:
             self.proxima_posicao += random.randint(350, 700)
 
     def colidiu_com(self, personagem):
+        """Informa se a personagem tocou alguma pedra."""
         return any(
             personagem.rect.colliderect(pedra.rect)
             for pedra in self.pedras
         )
 
     def personagem_esta_sobre_buraco(self, personagem):
+        """Verifica se o centro dos pés está dentro de algum buraco."""
+        # Usa o centro dos pés como apoio. Isso evita que a personagem perca
+        # o direito de pular apenas por encostar a lateral em uma borda.
+        centro_dos_pes = personagem.rect.centerx
         return any(
-            personagem.rect.right > buraco.rect.left
-            and personagem.rect.left < buraco.rect.right
+            buraco.rect.left < centro_dos_pes < buraco.rect.right
             for buraco in self.buracos
         )
 
     def desenhar(self, tela, camera_x):
+        """Desenha somente os obstáculos próximos à área visível."""
         limite_esquerdo = camera_x - 100
         limite_direito = camera_x + self.largura_tela + 100
 

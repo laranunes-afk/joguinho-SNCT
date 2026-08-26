@@ -7,6 +7,7 @@ class Inimigo:
     """Inimigo que patrulha uma pequena área do cenário."""
 
     def __init__(self, x, y_chao):
+        """Cria um inimigo e define os limites de sua patrulha."""
         self.rect = pygame.Rect(x, y_chao - 58, 46, 58)
         self.limite_esquerdo = x - 110
         self.limite_direito = x + 110
@@ -14,6 +15,7 @@ class Inimigo:
         self.derrotado = False
 
     def atualizar(self, pedras=(), buracos=(), areas_livres=(), outros=()):
+        """Patrulha a área e muda de direção diante de bloqueios."""
         if self.derrotado:
             return
 
@@ -50,6 +52,7 @@ class Inimigo:
             self.velocidade = -abs(self.velocidade)
 
     def desenhar(self, tela, camera_x):
+        """Desenha o inimigo enquanto ele não tiver sido derrotado."""
         if self.derrotado:
             return
 
@@ -113,6 +116,7 @@ class Inimigos:
     """Gera, movimenta e detecta colisões com os inimigos da fase."""
 
     def __init__(self, largura_tela, y_chao, areas_livres=None):
+        """Prepara a geração e o controle dos inimigos da fase."""
         self.largura_tela = largura_tela
         self.y_chao = y_chao
         self.areas_livres = areas_livres or []
@@ -121,6 +125,7 @@ class Inimigos:
 
     @staticmethod
     def _rota_sobre_buraco(inimigo, buracos):
+        """Verifica se a área de patrulha planejada cruza um buraco."""
         rota = inimigo.rect.inflate(240, 0)
         return any(
             rota.right > buraco.rect.left
@@ -129,6 +134,7 @@ class Inimigos:
         )
 
     def atualizar(self, camera_x, pedras=(), buracos=()):
+        """Gera inimigos em posições seguras e atualiza suas patrulhas."""
         limite_geracao = camera_x + self.largura_tela * 2
 
         while self.proxima_posicao < limite_geracao:
@@ -183,6 +189,7 @@ class Inimigos:
         return None
 
     def desenhar(self, tela, camera_x):
+        """Desenha somente os inimigos próximos à tela."""
         limite_esquerdo = camera_x - 100
         limite_direito = camera_x + self.largura_tela + 100
 

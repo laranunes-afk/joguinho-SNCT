@@ -6,6 +6,7 @@ from recursos import carregar_imagem
 class Personagem:
 
     def __init__(self, x, y, largura=50, altura=80):
+        """Cria a personagem, configura a física e carrega sua animação."""
 
         # ====================================================
         # RETÂNGULO DO PERSONAGEM
@@ -37,6 +38,10 @@ class Personagem:
         self.gravidade = 0.6
 
         self.no_chao = False
+
+        # Fica ativo quando a personagem entra em um buraco, impedindo que
+        # ela volte a pousar no chão do outro lado durante a mesma queda.
+        self.caindo_no_buraco = False
 
 
         # ====================================================
@@ -76,6 +81,7 @@ class Personagem:
     # ========================================================
 
     def mover(self):
+        """Lê as teclas horizontais e desloca a personagem."""
 
         teclas = pygame.key.get_pressed()
         deslocamento_x = 0
@@ -116,6 +122,7 @@ class Personagem:
     # ========================================================
 
     def pular(self):
+        """Inicia um pulo quando a tecla é pressionada sobre o chão."""
 
         teclas = pygame.key.get_pressed()
 
@@ -137,6 +144,7 @@ class Personagem:
     # ========================================================
 
     def aplicar_gravidade(self, y_chao, esta_sobre_buraco=False):
+        """Aplica a queda vertical e resolve o contato com o chão."""
 
         self.velocidade_y += self.gravidade
 
@@ -163,6 +171,7 @@ class Personagem:
     # ========================================================
 
     def atualizar(self, y_chao, verificar_buraco=None):
+        """Atualiza movimento, pulo, gravidade e animação em um quadro."""
 
         self.mover()
 
@@ -175,11 +184,14 @@ class Personagem:
         if esta_sobre_buraco:
             self.no_chao = False
 
+            if self.rect.bottom >= y_chao:
+                self.caindo_no_buraco = True
+
         self.pular()
 
         self.aplicar_gravidade(
             y_chao,
-            esta_sobre_buraco
+            esta_sobre_buraco or self.caindo_no_buraco
         )
 
         self.atualizar_animacao()
@@ -204,6 +216,7 @@ class Personagem:
     # ========================================================
 
     def desenhar(self, tela, camera_x=0):
+        """Desenha o quadro atual da personagem na posição da câmera."""
         personagem_na_tela = self.rect.copy()
         personagem_na_tela.x -= int(camera_x)
         quadros = (

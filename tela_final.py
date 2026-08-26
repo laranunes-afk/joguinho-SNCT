@@ -11,6 +11,7 @@ class TelaFinal:
     """Exibe o resultado da partida e mantém o ranking local dos jogadores."""
 
     def _carregar_ranking(self):
+        """Lê e valida as entradas salvas no ranking local."""
         try:
             with ARQUIVO_RANKING.open(encoding="utf-8") as arquivo:
                 ranking = json.load(arquivo)
@@ -27,6 +28,7 @@ class TelaFinal:
         ]
 
     def _ordenar_e_salvar(self, ranking):
+        """Ordena os dez melhores resultados e grava o arquivo JSON."""
         ranking.sort(
             key=lambda item: (item["tempo"], -item["lupas"], item["nome"].casefold())
         )
@@ -56,6 +58,7 @@ class TelaFinal:
         botao_sair = pygame.Rect(largura // 2 + 20, altura - 85, 220, 55)
 
         def registrar_resultado():
+            """Adiciona o resultado atual uma única vez ao ranking."""
             nonlocal ranking, salvo, mensagem
 
             if salvo:

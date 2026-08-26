@@ -7,6 +7,7 @@ class Perguntas:
     """Exibe perguntas de múltipla escolha específicas de cada fase."""
 
     def __init__(self):
+        """Cria e embaralha os bancos de perguntas das três fases."""
         self.tipos = {
             1: "CONHECIMENTOS GERAIS",
             2: "MATEMÁTICA",
@@ -49,6 +50,7 @@ class Perguntas:
             random.shuffle(lista)
 
     def _proxima_pergunta(self, fase):
+        """Seleciona a próxima pergunta da fase sem esgotar a lista."""
         lista = self.listas[fase]
         indice = self.indices[fase]
 
@@ -163,58 +165,3 @@ class Perguntas:
             pygame.display.flip()
             clock.tick(60)
 
-    def mostrar_vitoria(self, tela, segundos_decorridos):
-        largura, altura = tela.get_size()
-        fonte_titulo = pygame.font.Font(None, 90)
-        fonte_texto = pygame.font.Font(None, 42)
-        clock = pygame.time.Clock()
-
-        minutos = segundos_decorridos // 60
-        segundos = segundos_decorridos % 60
-
-        while True:
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    return
-
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key in (pygame.K_RETURN, pygame.K_ESCAPE):
-                        return
-
-                if evento.type == pygame.MOUSEBUTTONDOWN:
-                    return
-
-            tela.fill((18, 35, 45))
-
-            titulo = fonte_titulo.render(
-                "VOCÊ COMPLETOU AS 3 FASES!",
-                True,
-                (80, 220, 120)
-            )
-            tela.blit(
-                titulo,
-                titulo.get_rect(center=(largura // 2, altura // 2 - 70))
-            )
-
-            tempo = fonte_texto.render(
-                f"Tempo final: {minutos:02d}:{segundos:02d}",
-                True,
-                (255, 255, 255)
-            )
-            tela.blit(
-                tempo,
-                tempo.get_rect(center=(largura // 2, altura // 2 + 25))
-            )
-
-            sair = fonte_texto.render(
-                "Pressione Enter ou clique para sair",
-                True,
-                (190, 200, 210)
-            )
-            tela.blit(
-                sair,
-                sair.get_rect(center=(largura // 2, altura // 2 + 95))
-            )
-
-            pygame.display.flip()
-            clock.tick(60)

@@ -10,9 +10,19 @@
     "lupas": 55
   },
   {
+    "nome": "lara",
+    "tempo": 60,
+    "lupas": 95
+  },
+  {
     "nome": "saloti",
     "tempo": 73,
     "lupas": 43
+  },
+  {
+    "nome": "lara",
+    "tempo": 75,
+    "lupas": 81
   },
   {
     "nome": "lara",
@@ -33,5 +43,10 @@
     "nome": "duda",
     "tempo": 107,
     "lupas": 42
+  },
+  {
+    "nome": "sarah",
+    "tempo": 138,
+    "lupas": 69
   }
 ]

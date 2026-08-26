@@ -7,6 +7,7 @@ class Checkpoint:
     """Marca um novo ponto de retorno para o personagem."""
 
     def __init__(self, x, y_chao):
+        """Cria um checkpoint inativo na posição informada."""
         self.x = x
         self.y_chao = y_chao
         self.ativado = False
@@ -31,6 +32,7 @@ class Checkpoint:
         self.imagem_ativa = self._carregar_bandeira("CheckPoint-Verde.png")
 
     def _carregar_bandeira(self, nome_arquivo):
+        """Recorta e redimensiona uma imagem de bandeira."""
         imagem_original = carregar_imagem(
             nome_arquivo,
             fundo_transparente=True
@@ -43,15 +45,18 @@ class Checkpoint:
         return pygame.transform.scale(imagem_recortada, (75, 115))
 
     def foi_alcancado(self, personagem):
+        """Informa se a personagem alcançou este checkpoint pela primeira vez."""
         return (
             not self.ativado
             and self.rect.colliderect(personagem.rect)
         )
 
     def ativar(self):
+        """Marca o checkpoint como respondido e ativo."""
         self.ativado = True
 
     def desenhar(self, tela, camera_x, largura_tela):
+        """Desenha a bandeira quando ela estiver dentro da área visível."""
         x_na_tela = int(self.x - camera_x)
 
         if x_na_tela < -80 or x_na_tela > largura_tela + 80:
