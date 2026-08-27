@@ -27,44 +27,26 @@ class Cenario:
         else:
             self._criar_noite_gelada()
 
+        self._criar_chao_comum()
+
     def _criar_floresta(self):
         """Desenha o fundo e o chão usados na primeira fase."""
-        self.fundo.fill((120, 180, 230))
-
-        pygame.draw.circle(self.fundo, (245, 245, 245), (150, 100), 35)
-        pygame.draw.circle(self.fundo, (245, 245, 245), (190, 100), 45)
-        pygame.draw.circle(self.fundo, (245, 245, 245), (230, 100), 30)
-
-        pygame.draw.polygon(
-            self.fundo,
-            (80, 120, 100),
-            [(0, self.y_chao), (180, 250), (360, self.y_chao)]
+        fundo_floresta = carregar_imagem(
+            "pixilart-drawing (1).png",
+            (self.largura, self.altura)
         )
-        pygame.draw.polygon(
-            self.fundo,
-            (70, 110, 90),
-            [(280, self.y_chao), (520, 220), (780, self.y_chao)]
-        )
-        pygame.draw.polygon(
-            self.fundo,
-            (90, 130, 100),
-            [(650, self.y_chao), (850, 280), (self.largura, self.y_chao)]
-        )
-
-        self.chao.fill((100, 65, 35))
-        pygame.draw.rect(self.chao, (60, 150, 60), (0, 0, self.largura, 20))
-
-        for x in range(20, self.largura, 40):
-            pygame.draw.circle(self.chao, (75, 45, 25), (x, 55), 5)
+        self.fundo.blit(fundo_floresta, (0, 0))
 
     def _criar_deserto(self):
         """Monta o cenário da segunda fase usando as imagens do deserto."""
         fundo_deserto = carregar_imagem(
-            "pixilart-drawing (1).png",
+            "cenário2.png",
             (self.largura, self.altura)
         )
         self.fundo.blit(fundo_deserto, (0, 0))
 
+    def _criar_chao_comum(self):
+        """Aplica a mesma imagem de chão em todas as fases."""
         imagem_original = carregar_imagem(
             "Chão.png",
             fundo_transparente=True
@@ -78,6 +60,7 @@ class Cenario:
             imagem_chao,
             (self.largura, self.altura_chao)
         )
+        self.chao.fill((0, 0, 0, 0))
         self.chao.blit(imagem_chao, (0, 0))
 
     def _criar_noite_gelada(self):
@@ -112,12 +95,6 @@ class Cenario:
             (225, 235, 245),
             [(575, 280), (650, 190), (730, 280)]
         )
-
-        self.chao.fill((55, 68, 90))
-        pygame.draw.rect(self.chao, (225, 235, 245), (0, 0, self.largura, 22))
-
-        for x in range(25, self.largura, 60):
-            pygame.draw.circle(self.chao, (90, 110, 135), (x, 60), 4)
 
     def desenhar_fundo(self, tela):
         """Repete o fundo para cobrir a região visível da câmera."""
