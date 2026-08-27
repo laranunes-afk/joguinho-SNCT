@@ -66,7 +66,7 @@ class Cenario:
     def _criar_noite_gelada(self):
         """Carrega o fundo estrelado usado na terceira fase."""
         fundo_noturno = carregar_imagem(
-            "Cenário 3.png",
+            "cenário-3.png",
             (self.largura, self.altura)
         )
         self.fundo.blit(fundo_noturno, (0, 0))
