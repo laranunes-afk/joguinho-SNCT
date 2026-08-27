@@ -40,7 +40,7 @@ class Cenario:
     def _criar_deserto(self):
         """Monta o cenário da segunda fase usando as imagens do deserto."""
         fundo_deserto = carregar_imagem(
-            "cenário2.png",
+            "cenário-2.png",
             (self.largura, self.altura)
         )
         self.fundo.blit(fundo_deserto, (0, 0))
