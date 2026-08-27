@@ -119,25 +119,6 @@ class Cenario:
         for x in range(25, self.largura, 60):
             pygame.draw.circle(self.chao, (90, 110, 135), (x, 60), 4)
 
-    def seguir_personagem(self, personagem):
-        """Move a câmera horizontal quando a personagem avança ou retorna."""
-        margem = self.largura * 0.35
-
-        if personagem.rect.right - self.camera_x > self.largura - margem:
-            nova_camera = personagem.rect.right - (self.largura - margem)
-
-            if nova_camera > self.camera_x:
-                self.camera_x = nova_camera
-
-        elif personagem.rect.left - self.camera_x < margem:
-            nova_camera = personagem.rect.left - margem
-
-            if nova_camera < self.camera_x:
-                self.camera_x = max(self.inicio_mundo, nova_camera)
-
-        if self.camera_x < self.inicio_mundo:
-            self.camera_x = self.inicio_mundo
-
     def desenhar_fundo(self, tela):
         """Repete o fundo para cobrir a região visível da câmera."""
         inicio = int(self.camera_x // self.largura)

@@ -1,25 +1,27 @@
 import pygame
 
+from configuracoes_tela import FPS, criar_tela
+
 
 def desenhar_lista_controles(tela, largura, altura):
-    """Exibe os controles em uma lista na lateral direita do menu."""
-    largura_painel = min(340, max(280, largura // 4))
+    """Exibe os controles em uma lista na lateral direita da tela."""
+    largura_painel = min(310, max(270, largura // 5))
     painel = pygame.Rect(
         largura - largura_painel - 30,
-        max(35, (altura - 410) // 2),
+        max(35, (altura - 350) // 2),
         largura_painel,
-        410
+        350
     )
 
     pygame.draw.rect(tela, (17, 25, 43), painel, border_radius=18)
     pygame.draw.rect(tela, (95, 155, 205), painel, 3, border_radius=18)
 
-    fonte_titulo = pygame.font.Font(None, 42)
-    fonte_tecla = pygame.font.Font(None, 30)
-    fonte_descricao = pygame.font.Font(None, 28)
+    fonte_titulo = pygame.font.Font(None, 36)
+    fonte_tecla = pygame.font.Font(None, 26)
+    fonte_descricao = pygame.font.Font(None, 24)
 
     titulo = fonte_titulo.render("CONTROLES", True, (255, 215, 70))
-    tela.blit(titulo, titulo.get_rect(center=(painel.centerx, painel.top + 42)))
+    tela.blit(titulo, titulo.get_rect(center=(painel.centerx, painel.top + 34)))
 
     controles = [
         ("W /", "cima", "Pular"),
@@ -35,9 +37,9 @@ def desenhar_lista_controles(tela, largura, altura):
         "direita": ["00100", "00110", "11111", "00110", "00100"],
     }
 
-    y = painel.top + 88
+    y = painel.top + 69
     for tecla, direcao, descricao in controles:
-        caixa_tecla = pygame.Rect(painel.left + 20, y, 92, 46)
+        caixa_tecla = pygame.Rect(painel.left + 16, y, 82, 38)
         pygame.draw.rect(tela, (48, 75, 112), caixa_tecla, border_radius=8)
         pygame.draw.rect(tela, (150, 205, 240), caixa_tecla, 2, border_radius=8)
 
@@ -45,7 +47,7 @@ def desenhar_lista_controles(tela, largura, altura):
         if direcao is None:
             tela.blit(texto_tecla, texto_tecla.get_rect(center=caixa_tecla.center))
         else:
-            escala = 4
+            escala = 3
             largura_seta = 5 * escala
             espaco = 6
             largura_total = texto_tecla.get_width() + espaco + largura_seta
@@ -78,17 +80,15 @@ def desenhar_lista_controles(tela, largura, altura):
         tela.blit(
             texto_descricao,
             texto_descricao.get_rect(
-                midleft=(caixa_tecla.right + 14, caixa_tecla.centery)
+                midleft=(caixa_tecla.right + 10, caixa_tecla.centery)
             )
         )
-        y += 61
+        y += 52
 
 def tela_inicial():
     """Exibe o menu inicial e retorna True quando JOGAR for escolhido."""
     pygame.init()
-    tela = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    largura, altura = tela.get_size()
-    pygame.display.set_caption("A Caçadora da Tumba da Cleópatra")
+    tela, largura, altura = criar_tela()
     clock = pygame.time.Clock()
 
     # Aparência do menu.
@@ -137,6 +137,5 @@ def tela_inicial():
         texto_jogar = fonte_botao.render("JOGAR", True, cor_texto_botao)
         tela.blit(texto_jogar, texto_jogar.get_rect(center=botao_jogar.center))
 
-        desenhar_lista_controles(tela, largura, altura)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(FPS)

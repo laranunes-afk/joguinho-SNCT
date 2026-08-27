@@ -30,6 +30,16 @@
     "lupas": 88
   },
   {
+    "nome": "saori",
+    "tempo": 83,
+    "lupas": 81
+  },
+  {
+    "nome": "saloti",
+    "tempo": 89,
+    "lupas": 92
+  },
+  {
     "nome": "willian",
     "tempo": 93,
     "lupas": 35
@@ -38,15 +48,5 @@
     "nome": "lara",
     "tempo": 104,
     "lupas": 60
-  },
-  {
-    "nome": "duda",
-    "tempo": 107,
-    "lupas": 42
-  },
-  {
-    "nome": "sarah",
-    "tempo": 138,
-    "lupas": 69
   }
 ]

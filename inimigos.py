@@ -115,13 +115,31 @@ class Inimigo:
 class Inimigos:
     """Gera, movimenta e detecta colisões com os inimigos da fase."""
 
-    def __init__(self, largura_tela, y_chao, areas_livres=None):
+    def __init__(
+        self,
+        largura_tela,
+        y_chao,
+        areas_livres=None,
+        numero_fase=1
+    ):
         """Prepara a geração e o controle dos inimigos da fase."""
         self.largura_tela = largura_tela
         self.y_chao = y_chao
         self.areas_livres = areas_livres or []
         self.inimigos = []
-        self.proxima_posicao = random.randint(800, 1100)
+        self.numero_fase = max(1, min(3, numero_fase))
+        self.distancias_por_fase = {
+            1: (450, 600),
+            2: (350, 500),
+            3: (280, 420),
+        }
+        distancia_minima, distancia_maxima = self.distancias_por_fase[
+            self.numero_fase
+        ]
+        self.proxima_posicao = random.randint(
+            distancia_minima,
+            distancia_maxima
+        )
 
     @staticmethod
     def _rota_sobre_buraco(inimigo, buracos):
@@ -155,7 +173,13 @@ class Inimigos:
             ):
                 self.inimigos.append(inimigo)
 
-            self.proxima_posicao += random.randint(800, 1100)
+            distancia_minima, distancia_maxima = self.distancias_por_fase[
+                self.numero_fase
+            ]
+            self.proxima_posicao += random.randint(
+                distancia_minima,
+                distancia_maxima
+            )
 
         for inimigo in self.inimigos:
             inimigo.atualizar(

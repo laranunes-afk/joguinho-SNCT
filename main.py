@@ -2,9 +2,17 @@ import pygame
 
 from cenario import Cenario
 from checkpoint import Checkpoint
+from configuracoes_tela import (
+    FPS,
+    RECUO_CAMERA_RETORNO,
+    atualizar_camera_personagem,
+    criar_tela,
+    limitar_personagem_na_tela,
+)
 from fase_final import FaseFinal
+from hud import desenhar_hud
 from inimigos import Inimigos
-from menu import tela_inicial
+from menu import desenhar_lista_controles, tela_inicial
 from moedas import Moedas
 from obstaculos import Obstaculos
 from personagem import Personagem
@@ -105,7 +113,8 @@ def criar_fase(numero_fase, largura, altura):
     inimigos = Inimigos(
         largura,
         cenario.y_chao,
-        areas_livres
+        areas_livres,
+        numero_fase
     )
 
     moedas = Moedas(
@@ -128,89 +137,16 @@ def reposicionar(personagem, cenario, ponto_retorno_x):
 
     cenario.camera_x = max(
         cenario.inicio_mundo,
-        ponto_retorno_x - 30
+        ponto_retorno_x - RECUO_CAMERA_RETORNO
     )
-
-
-def desenhar_hud(
-    tela,
-    largura,
-    numero_fase,
-    fonte_cronometro,
-    fonte_fase,
-    fonte_moedas,
-    tempo_inicio,
-    moedas_coletadas
-):
-    """Desenha fase, cronômetro e lupas e devolve o tempo decorrido."""
-    if tempo_inicio is None:
-        segundos_decorridos = 0
-    else:
-        segundos_decorridos = (
-            pygame.time.get_ticks() - tempo_inicio
-        ) // 1000
-
-    minutos = segundos_decorridos // 60
-    segundos = segundos_decorridos % 60
-
-    texto_fase = fonte_fase.render(
-        f"FASE {numero_fase}/3",
-        True,
-        (255, 255, 255)
-    )
-    fundo_fase = texto_fase.get_rect(topleft=(30, 25)).inflate(24, 14)
-    pygame.draw.rect(tela, (25, 35, 55), fundo_fase, border_radius=10)
-    tela.blit(texto_fase, texto_fase.get_rect(topleft=(30, 25)))
-
-    texto_cronometro = fonte_cronometro.render(
-        f"{minutos:02d}:{segundos:02d}",
-        True,
-        (255, 255, 255)
-    )
-    rect_cronometro = texto_cronometro.get_rect(
-        topright=(largura - 30, 25)
-    )
-    fundo_cronometro = rect_cronometro.inflate(24, 14)
-    pygame.draw.rect(
-        tela,
-        (25, 35, 55),
-        fundo_cronometro,
-        border_radius=10
-    )
-    tela.blit(texto_cronometro, rect_cronometro)
-
-    texto_moedas = fonte_moedas.render(
-        f"LUPAS: {moedas_coletadas}",
-        True,
-        (255, 215, 55)
-    )
-    rect_moedas = texto_moedas.get_rect(
-        topright=(largura - 30, 88)
-    )
-    fundo_moedas = rect_moedas.inflate(24, 14)
-    pygame.draw.rect(
-        tela,
-        (25, 35, 55),
-        fundo_moedas,
-        border_radius=10
-    )
-    tela.blit(texto_moedas, rect_moedas)
-
-    return segundos_decorridos
 
 
 def jogo():
     """Executa uma partida completa, incluindo as três fases e o desafio final."""
     pygame.init()
 
-    tela = pygame.display.set_mode(
-        (0, 0),
-        pygame.FULLSCREEN
-    )
-    largura, altura = tela.get_size()
-    pygame.display.set_caption("A Caçadora da Tumba da Cleópatra")
+    tela, largura, altura = criar_tela()
 
-    fps = 60
     clock = pygame.time.Clock()
     fonte_cronometro = pygame.font.Font(None, 48)
     fonte_fase = pygame.font.Font(None, 42)
@@ -219,6 +155,7 @@ def jogo():
     segundos_decorridos = 0
     moedas_coletadas = 0
     textos_temporarios = []
+    mostrar_controles = True
 
     perguntas = Perguntas()
     numero_fase = 1
@@ -228,7 +165,7 @@ def jogo():
         largura,
         altura
     )
-    ponto_retorno_x = 30
+    ponto_retorno_x = RECUO_CAMERA_RETORNO
 
     rodando = True
 
@@ -265,10 +202,11 @@ def jogo():
                 inimigos,
                 moedas
             ) = criar_fase(numero_fase, largura, altura)
-            ponto_retorno_x = 30
+            ponto_retorno_x = RECUO_CAMERA_RETORNO
             moedas_coletadas = 0
             tempo_inicio = None
             segundos_decorridos = 0
+            mostrar_controles = True
             continue
 
         x_anterior = personagem.rect.x
@@ -278,11 +216,10 @@ def jogo():
             obstaculos.personagem_esta_sobre_buraco
         )
 
-        if personagem.rect.left < cenario.camera_x:
-            personagem.rect.left = cenario.camera_x
+        if personagem.rect.x != x_anterior:
+            mostrar_controles = False
 
-        if personagem.rect.right > cenario.camera_x + largura:
-            personagem.rect.right = cenario.camera_x + largura
+        limitar_personagem_na_tela(personagem, cenario.camera_x, largura)
 
         obstaculos.atualizar(cenario.camera_x)
         inimigos.atualizar(
@@ -326,10 +263,11 @@ def jogo():
                         inimigos,
                         moedas
                     ) = criar_fase(numero_fase, largura, altura)
-                    ponto_retorno_x = 30
+                    ponto_retorno_x = RECUO_CAMERA_RETORNO
                     moedas_coletadas = 0
                     tempo_inicio = None
                     segundos_decorridos = 0
+                    mostrar_controles = True
                     mudou_fase = True
                 elif resposta_correta is None:
                     rodando = False
@@ -387,11 +325,12 @@ def jogo():
                                     largura,
                                     altura
                                 )
-                                ponto_retorno_x = 30
+                                ponto_retorno_x = RECUO_CAMERA_RETORNO
                                 moedas_coletadas = 0
                                 if resultado_final == "reiniciar_total":
                                     tempo_inicio = None
                                     segundos_decorridos = 0
+                                    mostrar_controles = True
                                 mudou_fase = True
                         else:
                             numero_fase += 1
@@ -407,7 +346,7 @@ def jogo():
                                 largura,
                                 altura
                             )
-                            ponto_retorno_x = 30
+                            ponto_retorno_x = RECUO_CAMERA_RETORNO
                             # O bônus do checkpoint acompanha a personagem
                             # e começa novamente ao abrir a próxima fase.
                             if textos_temporarios:
@@ -475,13 +414,8 @@ def jogo():
         elif tempo_inicio is None and personagem.rect.x != x_anterior:
             tempo_inicio = pygame.time.get_ticks()
 
-        cenario.seguir_personagem(personagem)
-
-        if personagem.rect.left < cenario.camera_x:
-            personagem.rect.left = cenario.camera_x
-
-        if personagem.rect.right > cenario.camera_x + largura:
-            personagem.rect.right = cenario.camera_x + largura
+        atualizar_camera_personagem(cenario, personagem)
+        limitar_personagem_na_tela(personagem, cenario.camera_x, largura)
 
         cenario.desenhar(tela)
         moedas.desenhar(tela, cenario.camera_x)
@@ -502,6 +436,9 @@ def jogo():
             cenario.camera_x
         )
 
+        if mostrar_controles:
+            desenhar_lista_controles(tela, largura, altura)
+
         segundos_decorridos = desenhar_hud(
             tela,
             largura,
@@ -514,7 +451,7 @@ def jogo():
         )
 
         pygame.display.flip()
-        clock.tick(fps)
+        clock.tick(FPS)
 
     return False
 
