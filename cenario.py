@@ -64,37 +64,12 @@ class Cenario:
         self.chao.blit(imagem_chao, (0, 0))
 
     def _criar_noite_gelada(self):
-        """Desenha o fundo e o chão usados na terceira fase."""
-        self.fundo.fill((24, 38, 78))
-
-        pygame.draw.circle(self.fundo, (238, 240, 220), (150, 110), 55)
-        pygame.draw.circle(self.fundo, (24, 38, 78), (175, 90), 50)
-
-        for indice in range(28):
-            x = (indice * 137 + 45) % self.largura
-            y = 35 + (indice * 83) % max(100, self.altura // 2)
-            pygame.draw.circle(self.fundo, (235, 240, 255), (x, y), 2)
-
-        pygame.draw.polygon(
-            self.fundo,
-            (55, 72, 105),
-            [(0, self.y_chao), (220, 230), (440, self.y_chao)]
+        """Carrega o fundo estrelado usado na terceira fase."""
+        fundo_noturno = carregar_imagem(
+            "Cenário 3.png",
+            (self.largura, self.altura)
         )
-        pygame.draw.polygon(
-            self.fundo,
-            (65, 82, 115),
-            [(360, self.y_chao), (650, 190), (950, self.y_chao)]
-        )
-        pygame.draw.polygon(
-            self.fundo,
-            (225, 235, 245),
-            [(155, 320), (220, 230), (285, 320)]
-        )
-        pygame.draw.polygon(
-            self.fundo,
-            (225, 235, 245),
-            [(575, 280), (650, 190), (730, 280)]
-        )
+        self.fundo.blit(fundo_noturno, (0, 0))
 
     def desenhar_fundo(self, tela):
         """Repete o fundo para cobrir a região visível da câmera."""

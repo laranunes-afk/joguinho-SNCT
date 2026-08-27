@@ -12,11 +12,16 @@ class Personagem:
         # RETÂNGULO DO PERSONAGEM
         # ====================================================
 
+        self.largura_visual = largura
+        self.altura_visual = altura
+        largura_hitbox = max(1, int(largura * 0.68))
+        altura_hitbox = max(1, int(altura * 0.85))
+        self.margem_hitbox_x = (largura - largura_hitbox) // 2
         self.rect = pygame.Rect(
-            x,
-            y,
-            largura,
-            altura
+            x + self.margem_hitbox_x,
+            y + altura - altura_hitbox,
+            largura_hitbox,
+            altura_hitbox
         )
 
 
@@ -217,11 +222,16 @@ class Personagem:
 
     def desenhar(self, tela, camera_x=0):
         """Desenha o quadro atual da personagem na posição da câmera."""
-        personagem_na_tela = self.rect.copy()
-        personagem_na_tela.x -= int(camera_x)
         quadros = (
             self.quadros_esquerda
             if self.virado_para_esquerda
             else self.quadros_direita
         )
-        tela.blit(quadros[self.indice_quadro], personagem_na_tela)
+        quadro = quadros[self.indice_quadro]
+        personagem_na_tela = quadro.get_rect(
+            midbottom=(
+                self.rect.centerx - int(camera_x),
+                self.rect.bottom
+            )
+        )
+        tela.blit(quadro, personagem_na_tela)

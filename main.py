@@ -129,7 +129,7 @@ def criar_fase(numero_fase, largura, altura):
 
 def reposicionar(personagem, cenario, ponto_retorno_x):
     """Leva a personagem ao último ponto seguro e restaura sua queda."""
-    personagem.rect.left = ponto_retorno_x
+    personagem.rect.left = ponto_retorno_x + personagem.margem_hitbox_x
     personagem.rect.bottom = cenario.y_chao
     personagem.velocidade_y = 0
     personagem.no_chao = True
