@@ -13,7 +13,7 @@ LINK_MUSICA_GIT = (
 RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 PASTA_MUSICAS = RAIZ_PROJETO / "musica"
 NOME_MUSICA = "SNCT2026JOGO.mp3"
-VOLUME_MUSICA = 0.35
+VOLUME_MUSICA = 0.30
 REPETICOES = -1  # -1 mantém a música tocando em loop.
 
 
