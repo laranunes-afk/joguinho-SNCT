@@ -15,6 +15,11 @@
     "lupas": 95
   },
   {
+    "nome": "lara",
+    "tempo": 69,
+    "lupas": 121
+  },
+  {
     "nome": "saloti",
     "tempo": 73,
     "lupas": 43
@@ -43,10 +48,5 @@
     "nome": "willian",
     "tempo": 93,
     "lupas": 35
-  },
-  {
-    "nome": "lara",
-    "tempo": 104,
-    "lupas": 60
   }
 ]

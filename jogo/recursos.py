@@ -3,7 +3,8 @@ from pathlib import Path
 import pygame
 
 
-PASTA_IMAGENS = Path(__file__).with_name("Imagens")
+RAIZ_PROJETO = Path(__file__).resolve().parent.parent
+PASTA_IMAGENS = RAIZ_PROJETO / "Imagens"
 
 
 def carregar_imagem(nome, tamanho=None, fundo_transparente=False):

@@ -10,6 +10,11 @@ ARQUIVO_RANKING = Path(__file__).with_name("ranking.json")
 class TelaFinal:
     """Exibe o resultado da partida e mantém o ranking local dos jogadores."""
 
+    @staticmethod
+    def _chave_ranking(item):
+        """Prioriza mais lupas e usa o menor tempo como desempate."""
+        return (-item["lupas"], item["tempo"], item["nome"].casefold())
+
     def _carregar_ranking(self):
         """Lê e valida as entradas salvas no ranking local."""
         try:
@@ -18,7 +23,7 @@ class TelaFinal:
         except (FileNotFoundError, json.JSONDecodeError):
             return []
 
-        return [
+        ranking_valido = [
             item
             for item in ranking
             if isinstance(item, dict)
@@ -26,12 +31,11 @@ class TelaFinal:
             and isinstance(item.get("tempo"), int)
             and isinstance(item.get("lupas"), int)
         ]
+        return sorted(ranking_valido, key=self._chave_ranking)
 
     def _ordenar_e_salvar(self, ranking):
         """Ordena os dez melhores resultados e grava o arquivo JSON."""
-        ranking.sort(
-            key=lambda item: (item["tempo"], -item["lupas"], item["nome"].casefold())
-        )
+        ranking.sort(key=self._chave_ranking)
         ranking = ranking[:10]
 
         with ARQUIVO_RANKING.open("w", encoding="utf-8") as arquivo:
@@ -109,7 +113,7 @@ class TelaFinal:
             minutos = segundos_decorridos // 60
             segundos = segundos_decorridos % 60
             resumo = fonte_resumo.render(
-                f"Tempo: {minutos:02d}:{segundos:02d}   |   Lupas: {lupas_coletadas}",
+                f"Lupas: {lupas_coletadas}   |   Tempo: {minutos:02d}:{segundos:02d}",
                 True,
                 (255, 255, 255)
             )
@@ -135,7 +139,7 @@ class TelaFinal:
                 minutos_item = item["tempo"] // 60
                 segundos_item = item["tempo"] % 60
                 linha = fonte_ranking.render(
-                    f"{posicao:>2}. {item['nome']:<16}  {minutos_item:02d}:{segundos_item:02d}  {item['lupas']} lupas",
+                    f"{posicao:>2}. {item['nome']:<16}  {item['lupas']} lupas  {minutos_item:02d}:{segundos_item:02d}",
                     True,
                     (240, 245, 250)
                 )

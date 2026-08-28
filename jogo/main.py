@@ -2,6 +2,7 @@ import pygame
 
 from cenario import Cenario
 from checkpoint import Checkpoint
+from configuracoes_musica import iniciar_musica, parar_musica
 from configuracoes_tela import (
     FPS,
     RECUO_CAMERA_RETORNO,
@@ -462,9 +463,14 @@ def main():
     pygame.init()
 
     while tela_inicial():
+        iniciar_musica()
+
         # True significa que JOGAR NOVAMENTE foi escolhido na tela final.
         # Nesse caso, o laço volta ao menu antes de iniciar outra partida.
-        if not jogo():
+        jogar_novamente = jogo()
+        parar_musica()
+
+        if not jogar_novamente:
             break
 
     pygame.quit()
