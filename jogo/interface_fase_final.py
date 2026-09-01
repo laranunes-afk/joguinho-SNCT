@@ -1,6 +1,6 @@
 import pygame
 
-from recursos import carregar_imagem_recortada
+from recursos import carregar_imagem, carregar_imagem_recortada
 
 
 class InterfaceFaseFinal:
@@ -11,18 +11,28 @@ class InterfaceFaseFinal:
         self.altura = altura
         self.y_chao = y_chao
         self.altura_chao = altura - y_chao
+        # A arte original tambem possui uma faixa de piso. Usa somente a
+        # parte superior com os pilares, pois o chao do jogo e desenhado
+        # separadamente logo abaixo.
+        cenario_original = carregar_imagem("cenário 4.png")
+        area_pilares = pygame.Rect(
+            0,
+            0,
+            cenario_original.get_width(),
+            int(cenario_original.get_height() * 0.72),
+        )
+        pilares = cenario_original.subsurface(area_pilares).copy()
+        self.fundo = pygame.transform.scale(pilares, (largura, y_chao))
         self.chao = carregar_imagem_recortada(
             "Chão.png", (largura, self.altura_chao)
         )
 
     def desenhar_cenario(self, tela, camera_x):
-        tela.fill((24, 30, 55))
-        for indice in range(30):
-            x_mundo = indice * 173 + 70
-            x = int(x_mundo - camera_x * 0.25) % (self.largura + 100)
-            y = 45 + (indice * 67) % max(100, self.altura // 2)
-            pygame.draw.rect(tela, (220, 230, 255), (x, y, 3, 3))
         inicio = int(camera_x // self.largura)
+        for indice in range(inicio, inicio + 3):
+            x = indice * self.largura - camera_x
+            tela.blit(self.fundo, (x, 0))
+
         for indice in range(inicio, inicio + 3):
             x = indice * self.largura - camera_x
             tela.blit(self.chao, (x, self.y_chao))
