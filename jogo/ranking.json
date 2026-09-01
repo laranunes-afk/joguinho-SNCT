@@ -1,52 +1,62 @@
 [
   {
     "nome": "lara",
-    "tempo": 47,
-    "lupas": 50
-  },
-  {
-    "nome": "lara",
-    "tempo": 50,
-    "lupas": 55
-  },
-  {
-    "nome": "lara",
-    "tempo": 60,
-    "lupas": 95
+    "tempo": 67,
+    "lupas": 135,
+    "pontos": 16165
   },
   {
     "nome": "lara",
     "tempo": 69,
-    "lupas": 121
+    "lupas": 121,
+    "pontos": 14755
   },
   {
-    "nome": "saloti",
-    "tempo": 73,
-    "lupas": 43
+    "nome": "saloti2",
+    "tempo": 119,
+    "lupas": 122,
+    "pontos": 14605
+  },
+  {
+    "nome": "Luizao",
+    "tempo": 129,
+    "lupas": 101,
+    "pontos": 12455
   },
   {
     "nome": "lara",
-    "tempo": 75,
-    "lupas": 81
-  },
-  {
-    "nome": "lara",
-    "tempo": 78,
-    "lupas": 88
-  },
-  {
-    "nome": "saori",
-    "tempo": 83,
-    "lupas": 81
+    "tempo": 60,
+    "lupas": 95,
+    "pontos": 12200
   },
   {
     "nome": "saloti",
     "tempo": 89,
-    "lupas": 92
+    "lupas": 92,
+    "pontos": 11755
   },
   {
-    "nome": "willian",
-    "tempo": 93,
-    "lupas": 35
+    "nome": "lara",
+    "tempo": 78,
+    "lupas": 88,
+    "pontos": 11410
+  },
+  {
+    "nome": "mariah",
+    "tempo": 182,
+    "lupas": 91,
+    "pontos": 11190
+  },
+  {
+    "nome": "lara",
+    "tempo": 75,
+    "lupas": 81,
+    "pontos": 10725
+  },
+  {
+    "nome": "saori",
+    "tempo": 83,
+    "lupas": 81,
+    "pontos": 10685
   }
 ]

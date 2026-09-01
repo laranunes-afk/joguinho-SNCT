@@ -25,3 +25,15 @@ def carregar_imagem(nome, tamanho=None, fundo_transparente=False):
         imagem = pygame.transform.scale(imagem, tamanho)
 
     return imagem
+
+
+def carregar_imagem_recortada(nome, tamanho=None):
+    """Carrega somente a area visivel da arte e opcionalmente redimensiona."""
+    imagem = carregar_imagem(nome, fundo_transparente=True)
+    limites = pygame.mask.from_surface(imagem).get_bounding_rects()
+    if limites:
+        area_visivel = limites[0].unionall(limites)
+        imagem = imagem.subsurface(area_visivel).copy()
+    if tamanho is not None:
+        imagem = pygame.transform.scale(imagem, tamanho)
+    return imagem

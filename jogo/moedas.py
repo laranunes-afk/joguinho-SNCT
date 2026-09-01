@@ -2,7 +2,7 @@ import random
 
 import pygame
 
-from recursos import carregar_imagem
+from recursos import carregar_imagem_recortada
 
 
 class Moeda:
@@ -16,16 +16,7 @@ class Moeda:
             28,
             28
         )
-        imagem_original = carregar_imagem(
-            "Lupa.png",
-            fundo_transparente=True
-        )
-        limites = pygame.mask.from_surface(
-            imagem_original
-        ).get_bounding_rects()
-        area_lupa = limites[0].unionall(limites)
-        imagem_recortada = imagem_original.subsurface(area_lupa).copy()
-        self.imagem = pygame.transform.scale(imagem_recortada, (28, 28))
+        self.imagem = carregar_imagem_recortada("Lupa.png", (28, 28))
 
     def desenhar(self, tela, camera_x):
         """Desenha a lupa considerando o deslocamento da câmera."""

@@ -2,7 +2,7 @@ import random
 
 import pygame
 
-from recursos import carregar_imagem
+from recursos import carregar_imagem_recortada
 
 
 class Pedra:
@@ -19,18 +19,8 @@ class Pedra:
             largura,
             altura
         )
-        imagem_original = carregar_imagem(
-            "Pedra-melhorada.png",
-            fundo_transparente=True
-        )
-        limites = pygame.mask.from_surface(
-            imagem_original
-        ).get_bounding_rects()
-        area_pedra = limites[0].unionall(limites)
-        imagem_recortada = imagem_original.subsurface(area_pedra).copy()
-        self.imagem = pygame.transform.scale(
-            imagem_recortada,
-            (largura, altura)
+        self.imagem = carregar_imagem_recortada(
+            "Pedra-melhorada.png", (largura, altura)
         )
 
     def desenhar(self, tela, camera_x):
@@ -48,19 +38,7 @@ class Buraco:
         """Cria um buraco com largura aleatória a partir do nível do chão."""
         largura = random.randint(110, 150)
         self.rect = pygame.Rect(x, y_chao, largura, 2000)
-        imagem_original = carregar_imagem(
-            "Buraco.png",
-            fundo_transparente=True
-        )
-        limites = pygame.mask.from_surface(
-            imagem_original
-        ).get_bounding_rects()
-        area_buraco = limites[0].unionall(limites)
-        imagem_recortada = imagem_original.subsurface(area_buraco).copy()
-        self.imagem = pygame.transform.scale(
-            imagem_recortada,
-            (largura, 42)
-        )
+        self.imagem = carregar_imagem_recortada("Buraco.png", (largura, 42))
 
     def desenhar(self, tela, camera_x):
         """Desenha a abertura do buraco na posição visível."""

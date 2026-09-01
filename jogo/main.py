@@ -1,7 +1,6 @@
 import pygame
 
-from cenario import Cenario
-from checkpoint import Checkpoint
+from avisos import AvisosTemporarios
 from configuracoes_musica import iniciar_musica, parar_musica
 from configuracoes_tela import (
     FPS,
@@ -11,135 +10,12 @@ from configuracoes_tela import (
     limitar_personagem_na_tela,
 )
 from fase_final import FaseFinal
+from fabrica_fase import criar_fase as montar_fase
+from fabrica_fase import reposicionar as reposicionar_na_fase
 from hud import desenhar_hud
-from inimigos import Inimigos
 from menu import desenhar_lista_controles, tela_inicial
-from moedas import Moedas
-from obstaculos import Obstaculos
-from personagem import Personagem
 from perguntas import Perguntas
 from tela_final import TelaFinal
-
-
-def adicionar_texto_temporario(
-    textos,
-    personagem,
-    texto,
-    cor,
-    duracao=1100
-):
-    """Cria um aviso flutuante ancorado acima da personagem."""
-    textos.append(
-        {
-            "texto": texto,
-            "cor": cor,
-            "x": personagem.rect.centerx,
-            "y": personagem.rect.top - 12,
-            "inicio": pygame.time.get_ticks(),
-            "duracao": duracao,
-        }
-    )
-
-
-def desenhar_textos_temporarios(tela, textos, camera_x):
-    """Desenha avisos pixelados que sobem e desaparecem suavemente."""
-    agora = pygame.time.get_ticks()
-    fonte_base = pygame.font.Font(None, 18)
-    ativos = []
-
-    for aviso in textos:
-        decorrido = agora - aviso["inicio"]
-        duracao = aviso["duracao"]
-        if decorrido >= duracao:
-            continue
-
-        progresso = decorrido / duracao
-        superficie_base = fonte_base.render(
-            aviso["texto"],
-            False,
-            aviso["cor"]
-        )
-        superficie = pygame.transform.scale(
-            superficie_base,
-            (superficie_base.get_width() * 2, superficie_base.get_height() * 2)
-        )
-        superficie.set_alpha(int(255 * (1 - progresso)))
-        rect = superficie.get_rect(
-            midbottom=(
-                int(aviso["x"] - camera_x),
-                int(aviso["y"] - progresso * 38)
-            )
-        )
-        tela.blit(superficie, rect)
-        ativos.append(aviso)
-
-    textos[:] = ativos
-
-
-def criar_fase(numero_fase, largura, altura):
-    """Cria todos os objetos necessários para uma fase."""
-
-    cenario = Cenario(
-        largura,
-        altura,
-        numero_fase
-    )
-
-    personagem = Personagem(
-        30,
-        cenario.y_chao - 80
-    )
-
-    primeiro_checkpoint = largura + 250
-    distancia_checkpoints = max(1100, largura)
-
-    checkpoints = [
-        Checkpoint(
-            primeiro_checkpoint + indice * distancia_checkpoints,
-            cenario.y_chao
-        )
-        for indice in range(2)
-    ]
-
-    areas_livres = [
-        checkpoint.area_livre
-        for checkpoint in checkpoints
-    ]
-
-    obstaculos = Obstaculos(
-        largura,
-        cenario.y_chao,
-        areas_livres
-    )
-    inimigos = Inimigos(
-        largura,
-        cenario.y_chao,
-        areas_livres,
-        numero_fase
-    )
-
-    moedas = Moedas(
-        largura,
-        cenario.y_chao,
-        areas_livres
-    )
-    moedas.atualizar(0, obstaculos.pedras, obstaculos.buracos)
-
-    return cenario, personagem, checkpoints, obstaculos, inimigos, moedas
-
-
-def reposicionar(personagem, cenario, ponto_retorno_x):
-    """Leva a personagem ao último ponto seguro e restaura sua queda."""
-    personagem.rect.left = ponto_retorno_x + personagem.margem_hitbox_x
-    personagem.rect.bottom = cenario.y_chao
-    personagem.velocidade_y = 0
-    personagem.no_chao = True
-    personagem.caindo_no_buraco = False
-
-    cenario.camera_x = max(
-        cenario.inicio_mundo,
-        ponto_retorno_x - RECUO_CAMERA_RETORNO
-    )
 
 
 def jogo():
@@ -155,13 +31,13 @@ def jogo():
     tempo_inicio = None
     segundos_decorridos = 0
     moedas_coletadas = 0
-    textos_temporarios = []
+    avisos = AvisosTemporarios()
     mostrar_controles = True
 
     perguntas = Perguntas()
     numero_fase = 1
 
-    cenario, personagem, checkpoints, obstaculos, inimigos, moedas = criar_fase(
+    cenario, personagem, checkpoints, obstaculos, inimigos, moedas = montar_fase(
         numero_fase,
         largura,
         altura
@@ -202,7 +78,7 @@ def jogo():
                 obstaculos,
                 inimigos,
                 moedas
-            ) = criar_fase(numero_fase, largura, altura)
+            ) = montar_fase(numero_fase, largura, altura)
             ponto_retorno_x = RECUO_CAMERA_RETORNO
             moedas_coletadas = 0
             tempo_inicio = None
@@ -236,8 +112,7 @@ def jogo():
         lupas_apanhadas = moedas.coletar(personagem)
         moedas_coletadas += lupas_apanhadas
         for _ in range(lupas_apanhadas):
-            adicionar_texto_temporario(
-                textos_temporarios,
+            avisos.adicionar(
                 personagem,
                 "+1 LUPA",
                 (255, 205, 45)
@@ -263,7 +138,7 @@ def jogo():
                         obstaculos,
                         inimigos,
                         moedas
-                    ) = criar_fase(numero_fase, largura, altura)
+                    ) = montar_fase(numero_fase, largura, altura)
                     ponto_retorno_x = RECUO_CAMERA_RETORNO
                     moedas_coletadas = 0
                     tempo_inicio = None
@@ -276,8 +151,7 @@ def jogo():
                     checkpoint.ativar()
                     ponto_retorno_x = checkpoint.posicao_retorno
                     moedas_coletadas += 5
-                    adicionar_texto_temporario(
-                        textos_temporarios,
+                    avisos.adicionar(
                         personagem,
                         "+5 LUPAS",
                         (255, 205, 45),
@@ -321,7 +195,7 @@ def jogo():
                                     obstaculos,
                                     inimigos,
                                     moedas
-                                ) = criar_fase(
+                                ) = montar_fase(
                                     numero_fase,
                                     largura,
                                     altura
@@ -342,7 +216,7 @@ def jogo():
                                 obstaculos,
                                 inimigos,
                                 moedas
-                            ) = criar_fase(
+                            ) = montar_fase(
                                 numero_fase,
                                 largura,
                                 altura
@@ -350,11 +224,7 @@ def jogo():
                             ponto_retorno_x = RECUO_CAMERA_RETORNO
                             # O bônus do checkpoint acompanha a personagem
                             # e começa novamente ao abrir a próxima fase.
-                            if textos_temporarios:
-                                bonus = textos_temporarios[-1]
-                                bonus["x"] = personagem.rect.centerx
-                                bonus["y"] = personagem.rect.top - 12
-                                bonus["inicio"] = pygame.time.get_ticks()
+                            avisos.transferir_para(personagem)
                             mudou_fase = True
                 else:
                     deve_retornar = True
@@ -387,8 +257,7 @@ def jogo():
         )
         if resultado_inimigo == "derrotou":
             moedas_coletadas += 5
-            adicionar_texto_temporario(
-                textos_temporarios,
+            avisos.adicionar(
                 personagem,
                 "+5 LUPAS",
                 (255, 205, 45)
@@ -400,14 +269,13 @@ def jogo():
                 moedas_coletadas -= lupas_perdidas
 
         if deve_retornar:
-            reposicionar(
+            reposicionar_na_fase(
                 personagem,
                 cenario,
                 ponto_retorno_x
             )
             if lupas_perdidas:
-                adicionar_texto_temporario(
-                    textos_temporarios,
+                avisos.adicionar(
                     personagem,
                     f"-{lupas_perdidas} LUPAS",
                     (245, 65, 65)
@@ -431,11 +299,7 @@ def jogo():
             )
 
         personagem.desenhar(tela, cenario.camera_x)
-        desenhar_textos_temporarios(
-            tela,
-            textos_temporarios,
-            cenario.camera_x
-        )
+        avisos.desenhar(tela, cenario.camera_x)
 
         if mostrar_controles:
             desenhar_lista_controles(tela, largura, altura)
