@@ -1,6 +1,10 @@
 import pygame
 
-from recursos import carregar_imagem, carregar_imagem_recortada
+from recursos import (
+    carregar_imagem,
+    carregar_imagem_recortada,
+    renderizar_texto_contornado,
+)
 
 
 class InterfaceFaseFinal:
@@ -14,7 +18,7 @@ class InterfaceFaseFinal:
         # A arte original tambem possui uma faixa de piso. Usa somente a
         # parte superior com os pilares, pois o chao do jogo e desenhado
         # separadamente logo abaixo.
-        cenario_original = carregar_imagem("cenário 4.png")
+        cenario_original = carregar_imagem("cenário-4-pixilart.png")
         area_pilares = pygame.Rect(
             0,
             0,
@@ -92,7 +96,11 @@ class InterfaceFaseFinal:
             return
         progresso = decorrido / duracao
         fonte = pygame.font.Font(None, 18)
-        base = fonte.render("+5 LUPAS", False, (255, 205, 45))
+        base = renderizar_texto_contornado(
+            fonte,
+            "+5 LUPAS",
+            (255, 205, 45),
+        )
         texto = pygame.transform.scale(base, (base.get_width() * 2, base.get_height() * 2))
         texto.set_alpha(int(255 * (1 - progresso)))
         x = int(personagem.rect.centerx - camera_x)

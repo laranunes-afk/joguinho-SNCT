@@ -18,6 +18,7 @@ from moedas import Moedas
 from obstaculos import Obstaculos
 from personagem import Personagem
 from perguntas import Perguntas
+from recursos import renderizar_texto_contornado
 from tela_final import TelaFinal
 
 
@@ -54,10 +55,10 @@ def desenhar_textos_temporarios(tela, textos, camera_x):
             continue
 
         progresso = decorrido / duracao
-        superficie_base = fonte_base.render(
+        superficie_base = renderizar_texto_contornado(
+            fonte_base,
             aviso["texto"],
-            False,
-            aviso["cor"]
+            aviso["cor"],
         )
         superficie = pygame.transform.scale(
             superficie_base,

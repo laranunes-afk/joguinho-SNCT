@@ -1,5 +1,7 @@
 import pygame
 
+from recursos import renderizar_texto_contornado
+
 
 class TesouroFinal:
     """Passagem secreta encontrada ao sair pelo lado esquerdo da fase."""
@@ -47,8 +49,12 @@ class TesouroFinal:
             return
         fonte = pygame.font.Font(None, 48)
         mensagem = f"TESOURO ENCONTRADO: +{self.RECOMPENSA} LUPAS"
-        texto = fonte.render(mensagem, True, (255, 215, 55))
-        sombra = fonte.render(mensagem, True, (0, 0, 0))
+        texto = renderizar_texto_contornado(
+            fonte,
+            mensagem,
+            (255, 215, 55),
+            espessura=2,
+            antialias=True,
+        )
         rect = texto.get_rect(center=(largura // 2, 175))
-        tela.blit(sombra, rect.move(3, 3))
         tela.blit(texto, rect)

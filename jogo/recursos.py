@@ -37,3 +37,36 @@ def carregar_imagem_recortada(nome, tamanho=None):
     if tamanho is not None:
         imagem = pygame.transform.scale(imagem, tamanho)
     return imagem
+
+
+def renderizar_texto_contornado(
+    fonte,
+    texto,
+    cor_contorno,
+    cor_texto=(0, 0, 0),
+    espessura=1,
+    antialias=False,
+):
+    """Cria texto legivel com preenchimento e contorno independentes."""
+    preenchimento = fonte.render(texto, antialias, cor_texto)
+    contorno = fonte.render(texto, antialias, cor_contorno)
+    margem = espessura
+    superficie = pygame.Surface(
+        (
+            preenchimento.get_width() + margem * 2,
+            preenchimento.get_height() + margem * 2,
+        ),
+        pygame.SRCALPHA,
+    )
+
+    for deslocamento_x in range(-espessura, espessura + 1):
+        for deslocamento_y in range(-espessura, espessura + 1):
+            if deslocamento_x == 0 and deslocamento_y == 0:
+                continue
+            superficie.blit(
+                contorno,
+                (margem + deslocamento_x, margem + deslocamento_y),
+            )
+
+    superficie.blit(preenchimento, (margem, margem))
+    return superficie

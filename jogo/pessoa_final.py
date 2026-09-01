@@ -8,10 +8,19 @@ class PessoaFinal:
 
     ALTURA_IMAGEM = 90
 
-    def __init__(self, x, y_chao, cor, pergunta, nome_imagem=None):
+    def __init__(
+        self,
+        x,
+        y_chao,
+        cor,
+        pergunta,
+        nome_imagem=None,
+        altura_imagem=None,
+    ):
         self.cor = cor
         self.pergunta = pergunta
         self.respondida = False
+        self.altura_imagem = altura_imagem or self.ALTURA_IMAGEM
         self.imagem = self._carregar_imagem(nome_imagem)
         tamanho = self.imagem.get_size() if self.imagem else (100, 160)
         self.rect = pygame.Rect(x, 0, *tamanho)
@@ -26,11 +35,11 @@ class PessoaFinal:
             1,
             round(
                 recortada.get_width()
-                * self.ALTURA_IMAGEM
+                * self.altura_imagem
                 / recortada.get_height()
             ),
         )
-        return pygame.transform.scale(recortada, (largura, self.ALTURA_IMAGEM))
+        return pygame.transform.scale(recortada, (largura, self.altura_imagem))
 
     def bloquear_passagem(self, personagem, rect_anterior):
         """Impede que o apresentador seja atravessado antes da resposta."""

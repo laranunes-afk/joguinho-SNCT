@@ -22,9 +22,9 @@ PERGUNTAS_FINAIS = [
 ]
 
 APRESENTADORES = [
-    ((65, 145, 210), "personagem-1-mesma-escala.png"),
-    ((220, 115, 70), "personagem-2-mesma-escala.png"),
-    ((105, 180, 105), None),
+    ((65, 145, 210), "personagem-1-mesma-escala.png", 90),
+    ((220, 115, 70), "personagem-2-mesma-escala.png", 90),
+    ((105, 180, 105), "ELIAS.png", 100),
 ]
 
 
@@ -51,8 +51,9 @@ class FaseFinal:
                 cor,
                 PERGUNTAS_FINAIS[indice],
                 imagem,
+                altura_imagem,
             )
-            for indice, (cor, imagem) in enumerate(APRESENTADORES)
+            for indice, (cor, imagem, altura_imagem) in enumerate(APRESENTADORES)
         ]
         self.pergunta = PerguntaFinal(largura, altura, len(self.pessoas))
         self.fim_mundo = self.pessoas[-1].rect.right + largura // 2

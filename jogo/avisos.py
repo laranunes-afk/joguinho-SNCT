@@ -1,5 +1,7 @@
 import pygame
 
+from recursos import renderizar_texto_contornado
+
 
 class AvisosTemporarios:
     """Gerencia mensagens flutuantes sem acoplar essa logica a partida."""
@@ -37,7 +39,11 @@ class AvisosTemporarios:
             if decorrido >= aviso["duracao"]:
                 continue
             progresso = decorrido / aviso["duracao"]
-            base = fonte.render(aviso["texto"], False, aviso["cor"])
+            base = renderizar_texto_contornado(
+                fonte,
+                aviso["texto"],
+                aviso["cor"],
+            )
             texto = pygame.transform.scale(
                 base, (base.get_width() * 2, base.get_height() * 2)
             )

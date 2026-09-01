@@ -7,6 +7,12 @@
   },
   {
     "nome": "lara",
+    "tempo": 66,
+    "lupas": 138,
+    "pontos": 16470
+  },
+  {
+    "nome": "lara",
     "tempo": 67,
     "lupas": 135,
     "pontos": 16165
@@ -16,6 +22,12 @@
     "tempo": 84,
     "lupas": 131,
     "pontos": 15680
+  },
+  {
+    "nome": "lara",
+    "tempo": 66,
+    "lupas": 128,
+    "pontos": 15470
   },
   {
     "nome": "lara",
@@ -36,27 +48,15 @@
     "pontos": 14605
   },
   {
+    "nome": "lara",
+    "tempo": 83,
+    "lupas": 110,
+    "pontos": 13585
+  },
+  {
     "nome": "Luizao",
     "tempo": 129,
     "lupas": 101,
     "pontos": 12455
-  },
-  {
-    "nome": "lara",
-    "tempo": 60,
-    "lupas": 95,
-    "pontos": 12200
-  },
-  {
-    "nome": "saloti",
-    "tempo": 89,
-    "lupas": 92,
-    "pontos": 11755
-  },
-  {
-    "nome": "lara",
-    "tempo": 78,
-    "lupas": 88,
-    "pontos": 11410
   }
 ]
