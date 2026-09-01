@@ -1,9 +1,21 @@
 [
   {
+    "nome": "saloti4",
+    "tempo": 87,
+    "lupas": 157,
+    "pontos": 18265
+  },
+  {
     "nome": "lara",
     "tempo": 67,
     "lupas": 135,
     "pontos": 16165
+  },
+  {
+    "nome": "saloti3",
+    "tempo": 84,
+    "lupas": 131,
+    "pontos": 15680
   },
   {
     "nome": "lara",
@@ -46,17 +58,5 @@
     "tempo": 182,
     "lupas": 91,
     "pontos": 11190
-  },
-  {
-    "nome": "lara",
-    "tempo": 75,
-    "lupas": 81,
-    "pontos": 10725
-  },
-  {
-    "nome": "saori",
-    "tempo": 83,
-    "lupas": 81,
-    "pontos": 10685
   }
 ]
