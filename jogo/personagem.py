@@ -33,6 +33,7 @@ class Personagem:
         self.forca_pulo = -14
         self.gravidade = 0.6
         self.no_chao = False
+        self._pulo_pressionado = False
 
         # Depois de entrar em um buraco, não pode pousar na outra borda
         # durante a mesma queda. O estado é limpo ao reposicionar.
@@ -125,7 +126,9 @@ class Personagem:
         """Inicia o pulo somente quando a personagem está apoiada."""
         teclas = pygame.key.get_pressed()
         pediu_pulo = teclas[pygame.K_w] or teclas[pygame.K_UP]
-        if pediu_pulo and self.no_chao:
+        novo_toque = pediu_pulo and not self._pulo_pressionado
+        self._pulo_pressionado = pediu_pulo
+        if novo_toque and self.no_chao:
             self.velocidade_y = self.forca_pulo
             self.no_chao = False
 

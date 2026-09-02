@@ -31,7 +31,6 @@ class FaseFinal:
 
     def __init__(self, largura, altura):
         self.largura = largura
-        self.altura = altura
         self.y_chao = altura - int(altura * PROPORCAO_CHAO)
         self.camera_x = 0
         self.personagem = Personagem(X_INICIAL_PERSONAGEM, 0)

@@ -19,7 +19,6 @@ class InterfaceFaseFinal:
 
     def __init__(self, largura, altura, y_chao):
         self.largura = largura
-        self.altura = altura
         self.y_chao = y_chao
         self.altura_chao = altura - y_chao
         self.fundo, self.chao = self._carregar_cenario()

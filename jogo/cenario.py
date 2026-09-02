@@ -42,7 +42,6 @@ class Cenario:
         """Prepara as superfícies e medidas do cenário da fase."""
         self.largura = largura
         self.altura = altura
-        self.fase = fase
         self.inicio_mundo = 0
         self.camera_x = 0
         self.altura_chao = int(altura * PROPORCAO_ALTURA_CHAO)

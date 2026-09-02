@@ -161,8 +161,7 @@ class Inimigos:
         self.areas_livres = areas_livres or []
         self.inimigos = []
         self.numero_fase = max(1, min(3, numero_fase))
-        self.distancias_por_fase = dict(DISTANCIAS_POR_FASE)
-        self._intervalo_geracao = self.distancias_por_fase[self.numero_fase]
+        self._intervalo_geracao = DISTANCIAS_POR_FASE[self.numero_fase]
         self.proxima_posicao = random.randint(*self._intervalo_geracao)
 
     @staticmethod
