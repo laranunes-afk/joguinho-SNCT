@@ -3,6 +3,7 @@ import random
 import pygame
 
 from cenario import esta_visivel, manter_objetos_proximos
+from recursos import carregar_imagem_recortada
 
 
 LARGURA_INIMIGO = 46
@@ -23,12 +24,19 @@ MARGEM_PEDRA = (120, 0)
 MARGEM_VISIBILIDADE = 100
 TOLERANCIA_PISADA = 12
 INTENSIDADE_REBOTE = 0.55
+ALTURA_IMAGEM_INIMIGO = 78
+ARQUIVOS_INIMIGOS = (
+    "Homem Vilão6.png",
+    "mulher vilão.png",
+)
 
 
 class Inimigo:
     """Inimigo que patrulha uma pequena área do cenário."""
 
-    def __init__(self, x, y_chao):
+    _imagens = {}
+
+    def __init__(self, x, y_chao, nome_imagem=ARQUIVOS_INIMIGOS[0]):
         """Cria um inimigo e define os limites de sua patrulha."""
         self.rect = pygame.Rect(
             x,
@@ -40,6 +48,26 @@ class Inimigo:
         self.limite_direito = x + ALCANCE_PATRULHA
         self.velocidade = VELOCIDADE_PATRULHA
         self.derrotado = False
+        self.imagem = self._obter_imagem(nome_imagem)
+
+    @classmethod
+    def _obter_imagem(cls, nome_imagem):
+        """Carrega e dimensiona cada arte de inimigo uma única vez."""
+        if nome_imagem not in cls._imagens:
+            imagem = carregar_imagem_recortada(nome_imagem)
+            largura = max(
+                1,
+                round(
+                    imagem.get_width()
+                    * ALTURA_IMAGEM_INIMIGO
+                    / imagem.get_height()
+                ),
+            )
+            cls._imagens[nome_imagem] = pygame.transform.scale(
+                imagem,
+                (largura, ALTURA_IMAGEM_INIMIGO),
+            )
+        return cls._imagens[nome_imagem]
 
     def _esta_perto_de_buraco(self, buracos):
         return any(
@@ -92,57 +120,10 @@ class Inimigo:
         inimigo_na_tela = self.rect.copy()
         inimigo_na_tela.x -= int(camera_x)
 
-        # Arte provisória construída com formas simples.
-        pygame.draw.rect(
-            tela,
-            (120, 55, 135),
-            (inimigo_na_tela.left + 5, inimigo_na_tela.top + 22, 36, 31),
-            border_radius=8,
-        )
-        pygame.draw.circle(
-            tela,
-            (170, 90, 180),
-            (inimigo_na_tela.centerx, inimigo_na_tela.top + 16),
-            17,
-        )
-        pygame.draw.circle(
-            tela,
-            (255, 255, 255),
-            (inimigo_na_tela.centerx - 6, inimigo_na_tela.top + 14),
-            4,
-        )
-        pygame.draw.circle(
-            tela,
-            (255, 255, 255),
-            (inimigo_na_tela.centerx + 6, inimigo_na_tela.top + 14),
-            4,
-        )
-        pygame.draw.circle(
-            tela,
-            (35, 25, 45),
-            (inimigo_na_tela.centerx - 6, inimigo_na_tela.top + 15),
-            2,
-        )
-        pygame.draw.circle(
-            tela,
-            (35, 25, 45),
-            (inimigo_na_tela.centerx + 6, inimigo_na_tela.top + 15),
-            2,
-        )
-        pygame.draw.line(
-            tela,
-            (55, 35, 70),
-            (inimigo_na_tela.left + 9, inimigo_na_tela.bottom),
-            (inimigo_na_tela.left + 16, inimigo_na_tela.bottom - 8),
-            4,
-        )
-        pygame.draw.line(
-            tela,
-            (55, 35, 70),
-            (inimigo_na_tela.right - 9, inimigo_na_tela.bottom),
-            (inimigo_na_tela.right - 16, inimigo_na_tela.bottom - 8),
-            4,
-        )
+        imagem = self.imagem
+        if self.velocidade < 0:
+            imagem = pygame.transform.flip(imagem, True, False)
+        tela.blit(imagem, imagem.get_rect(midbottom=inimigo_na_tela.midbottom))
 
 
 class Inimigos:
@@ -202,7 +183,14 @@ class Inimigos:
     def _gerar_ate(self, limite_geracao, pedras, buracos):
         """Gera inimigos em posições seguras até o limite indicado."""
         while self.proxima_posicao < limite_geracao:
-            inimigo = Inimigo(self.proxima_posicao, self.y_chao)
+            nome_imagem = ARQUIVOS_INIMIGOS[
+                len(self.inimigos) % len(ARQUIVOS_INIMIGOS)
+            ]
+            inimigo = Inimigo(
+                self.proxima_posicao,
+                self.y_chao,
+                nome_imagem,
+            )
             if self._esta_em_posicao_segura(inimigo, pedras, buracos):
                 self.inimigos.append(inimigo)
             self.proxima_posicao += random.randint(*self._intervalo_geracao)
