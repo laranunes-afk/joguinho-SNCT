@@ -7,31 +7,63 @@ from obstaculos import Obstaculos
 from personagem import Personagem
 
 
-def criar_fase(numero_fase, largura, altura):
-    """Monta e conecta todas as pecas de uma fase comum."""
-    cenario = Cenario(largura, altura, numero_fase)
-    personagem = Personagem(30, cenario.y_chao - 80)
-    primeiro_checkpoint = largura + 250
-    distancia = max(1100, largura)
-    checkpoints = [
-        Checkpoint(primeiro_checkpoint + indice * distancia, cenario.y_chao)
-        for indice in range(2)
+X_INICIAL_PERSONAGEM = 30
+ALTURA_PERSONAGEM = 80
+QUANTIDADE_CHECKPOINTS = 2
+DISTANCIA_MINIMA_CHECKPOINTS = 1100
+RECUO_PRIMEIRO_CHECKPOINT = 250
+
+
+def _criar_checkpoints(largura, y_chao):
+    """Cria os pontos que delimitam o progresso da fase."""
+    primeiro_x = largura + RECUO_PRIMEIRO_CHECKPOINT
+    distancia = max(DISTANCIA_MINIMA_CHECKPOINTS, largura)
+    return [
+        Checkpoint(primeiro_x + indice * distancia, y_chao)
+        for indice in range(QUANTIDADE_CHECKPOINTS)
     ]
-    areas_livres = [checkpoint.area_livre for checkpoint in checkpoints]
-    obstaculos = Obstaculos(largura, cenario.y_chao, areas_livres)
-    inimigos = Inimigos(largura, cenario.y_chao, areas_livres, numero_fase)
-    moedas = Moedas(largura, cenario.y_chao, areas_livres)
+
+
+def _criar_elementos_da_fase(largura, y_chao, areas_protegidas, numero_fase):
+    """Conecta geradores que compartilham chão e zonas protegidas."""
+    obstaculos = Obstaculos(largura, y_chao, areas_protegidas)
+    inimigos = Inimigos(
+        largura,
+        y_chao,
+        areas_protegidas,
+        numero_fase,
+    )
+    moedas = Moedas(largura, y_chao, areas_protegidas)
     moedas.atualizar(0, obstaculos.pedras, obstaculos.buracos)
+    return obstaculos, inimigos, moedas
+
+
+def criar_fase(numero_fase, largura, altura):
+    """Monta e conecta as seis peças públicas de uma fase comum."""
+    cenario = Cenario(largura, altura, numero_fase)
+    personagem = Personagem(
+        X_INICIAL_PERSONAGEM,
+        cenario.y_chao - ALTURA_PERSONAGEM,
+    )
+    checkpoints = _criar_checkpoints(largura, cenario.y_chao)
+    areas_protegidas = [
+        checkpoint.area_livre
+        for checkpoint in checkpoints
+    ]
+    obstaculos, inimigos, moedas = _criar_elementos_da_fase(
+        largura,
+        cenario.y_chao,
+        areas_protegidas,
+        numero_fase,
+    )
+
+    # A ordem é parte do contrato usado pelo laço principal.
     return cenario, personagem, checkpoints, obstaculos, inimigos, moedas
 
 
 def reposicionar(personagem, cenario, ponto_retorno_x):
-    """Restaura a personagem no ultimo ponto seguro."""
-    personagem.rect.left = ponto_retorno_x + personagem.margem_hitbox_x
-    personagem.rect.bottom = cenario.y_chao
-    personagem.velocidade_y = 0
-    personagem.no_chao = True
-    personagem.caindo_no_buraco = False
+    """Restaura a personagem e a câmera no último ponto seguro."""
+    personagem.posicionar_no_chao(ponto_retorno_x, cenario.y_chao)
     cenario.camera_x = max(
         cenario.inicio_mundo,
         ponto_retorno_x - RECUO_CAMERA_RETORNO,

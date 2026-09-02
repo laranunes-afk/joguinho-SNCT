@@ -1,10 +1,21 @@
 import pygame
 
-from recursos import carregar_imagem
+from cenario import esta_visivel
+from recursos import carregar_imagem_recortada
+
+
+LARGURA_ATIVACAO = 50
+MARGEM_AREA_ESQUERDA = 150
+LARGURA_AREA_PROTEGIDA = 350
+DESLOCAMENTO_RETORNO = 80
+MARGEM_VISIBILIDADE = 80
+TAMANHO_BANDEIRA = (75, 115)
 
 
 class Checkpoint:
     """Marca um novo ponto de retorno para o personagem."""
+
+    _imagens = {}
 
     def __init__(self, x, y_chao):
         """Cria um checkpoint inativo na posição informada."""
@@ -12,44 +23,31 @@ class Checkpoint:
         self.y_chao = y_chao
         self.ativado = False
 
-        # A área alta garante a ativação mesmo se o jogador estiver pulando.
-        self.rect = pygame.Rect(
-            x,
-            0,
-            50,
-            y_chao
-        )
-
+        # A área alta permite ativar a bandeira mesmo durante um pulo.
+        self.rect = pygame.Rect(x, 0, LARGURA_ATIVACAO, y_chao)
         self.area_livre = pygame.Rect(
-            x - 150,
+            x - MARGEM_AREA_ESQUERDA,
             0,
-            350,
-            y_chao
+            LARGURA_AREA_PROTEGIDA,
+            y_chao,
         )
-
-        self.posicao_retorno = x + 80
+        self.posicao_retorno = x + DESLOCAMENTO_RETORNO
         self.imagem_inativa = self._carregar_bandeira("Checkpoint.png")
         self.imagem_ativa = self._carregar_bandeira("CheckPoint-Verde.png")
 
-    def _carregar_bandeira(self, nome_arquivo):
-        """Recorta e redimensiona uma imagem de bandeira."""
-        imagem_original = carregar_imagem(
-            nome_arquivo,
-            fundo_transparente=True
-        )
-        limites = pygame.mask.from_surface(
-            imagem_original
-        ).get_bounding_rects()
-        area_bandeira = limites[0].unionall(limites)
-        imagem_recortada = imagem_original.subsurface(area_bandeira).copy()
-        return pygame.transform.scale(imagem_recortada, (75, 115))
+    @classmethod
+    def _carregar_bandeira(cls, nome_arquivo):
+        """Carrega cada estado da bandeira somente uma vez."""
+        if nome_arquivo not in cls._imagens:
+            cls._imagens[nome_arquivo] = carregar_imagem_recortada(
+                nome_arquivo,
+                TAMANHO_BANDEIRA,
+            )
+        return cls._imagens[nome_arquivo]
 
     def foi_alcancado(self, personagem):
         """Informa se a personagem alcançou este checkpoint pela primeira vez."""
-        return (
-            not self.ativado
-            and self.rect.colliderect(personagem.rect)
-        )
+        return not self.ativado and self.rect.colliderect(personagem.rect)
 
     def ativar(self):
         """Marca o checkpoint como respondido e ativo."""
@@ -57,13 +55,19 @@ class Checkpoint:
 
     def desenhar(self, tela, camera_x, largura_tela):
         """Desenha a bandeira quando ela estiver dentro da área visível."""
-        x_na_tela = int(self.x - camera_x)
-
-        if x_na_tela < -80 or x_na_tela > largura_tela + 80:
+        if not esta_visivel(
+            self.rect,
+            camera_x,
+            largura_tela,
+            MARGEM_VISIBILIDADE,
+        ):
             return
 
         imagem = self.imagem_ativa if self.ativado else self.imagem_inativa
         rect_imagem = imagem.get_rect(
-            midbottom=(x_na_tela + 25, self.y_chao)
+            midbottom=(
+                self.rect.centerx - int(camera_x),
+                self.rect.bottom,
+            )
         )
         tela.blit(imagem, rect_imagem)

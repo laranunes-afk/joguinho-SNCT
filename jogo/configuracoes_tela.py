@@ -4,6 +4,7 @@ import pygame
 TAMANHO_TELA = (0, 0)
 TELA_CHEIA = True
 FPS = 60
+TOTAL_FASES = 3
 TITULO_JOGO = "A Caçadora da Tumba da Cleópatra"
 MARGEM_CAMERA_PERSONAGEM = 0.35
 RECUO_CAMERA_RETORNO = 30

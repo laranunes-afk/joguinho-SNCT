@@ -1,139 +1,83 @@
 import random
 
-import pygame
-
 from dados_perguntas import PERGUNTAS_POR_FASE, TIPOS_DE_PERGUNTA
+from tela_multipla_escolha import (
+    LinhaCabecalho,
+    TelaMultiplaEscolha,
+    TemaMultiplaEscolha,
+)
+
+
+TEMA_PERGUNTAS = TemaMultiplaEscolha(
+    cor_fundo=(20, 30, 50),
+    cor_botao=(50, 85, 125),
+    cor_botao_hover=(75, 135, 185),
+    cor_resposta=(255, 255, 255),
+    cor_letra=(255, 255, 255),
+    largura_maxima_botao=900,
+    margem_horizontal=60,
+    altura_botao=70,
+    espacamento_botoes=18,
+    inicio_botoes_minimo=220,
+    y_pergunta=140,
+    tamanho_fonte_pergunta=44,
+    tamanho_fonte_resposta=36,
+    tamanho_fonte_letra=36,
+    tamanho_fonte_rodape=28,
+    cor_rodape=(190, 200, 215),
+    margem_rodape=35,
+    raio_borda=12,
+)
 
 
 class Perguntas:
-    """Exibe perguntas de múltipla escolha específicas de cada fase."""
+    """Seleciona e exibe perguntas específicas de cada fase."""
 
     def __init__(self):
-        """Cria e embaralha os bancos de perguntas das três fases."""
         self.tipos = TIPOS_DE_PERGUNTA
         self.listas = {
             fase: list(perguntas)
             for fase, perguntas in PERGUNTAS_POR_FASE.items()
         }
-
-        self.indices = {1: 0, 2: 0, 3: 0}
+        # Os controles acompanham automaticamente as fases presentes nos dados.
+        self.indices = {fase: 0 for fase in self.listas}
+        self.tela_pergunta = TelaMultiplaEscolha(TEMA_PERGUNTAS)
 
         for lista in self.listas.values():
             random.shuffle(lista)
 
     def _proxima_pergunta(self, fase):
-        """Seleciona a próxima pergunta da fase sem esgotar a lista."""
-        lista = self.listas[fase]
-        indice = self.indices[fase]
+        """Seleciona a próxima pergunta e reembaralha ao completar um ciclo."""
+        if fase not in self.listas:
+            raise ValueError(f"Não existem perguntas para a fase {fase}")
 
-        if indice > 0 and indice % len(lista) == 0:
+        lista = self.listas[fase]
+        if not lista:
+            raise ValueError(f"A fase {fase} não possui perguntas cadastradas")
+
+        indice = self.indices[fase]
+        if indice and indice % len(lista) == 0:
             random.shuffle(lista)
 
         self.indices[fase] += 1
         return lista[indice % len(lista)]
 
     def fazer(self, tela, fase):
-        """Retorna True para acerto, False para erro e None ao sair."""
-
-        largura, altura = tela.get_size()
+        """Mantém o contrato antigo: acerto, erro, saída ou reinício."""
         pergunta, respostas, correta = self._proxima_pergunta(fase)
-
-        fonte_titulo = pygame.font.Font(None, 58)
-        fonte_pergunta = pygame.font.Font(None, 44)
-        fonte_resposta = pygame.font.Font(None, 36)
-        fonte_instrucao = pygame.font.Font(None, 28)
-        clock = pygame.time.Clock()
-
-        largura_botao = min(900, largura - 120)
-        altura_botao = 70
-        espacamento = 18
-        inicio_y = max(220, altura // 3)
-
-        botoes = []
-
-        for indice in range(4):
-            botao = pygame.Rect(
-                0,
-                inicio_y + indice * (altura_botao + espacamento),
-                largura_botao,
-                altura_botao
-            )
-            botao.centerx = largura // 2
-            botoes.append(botao)
-
-        teclas = {
-            pygame.K_a: 0,
-            pygame.K_b: 1,
-            pygame.K_c: 2,
-            pygame.K_d: 3,
-        }
-
-        while True:
-            pos_mouse = pygame.mouse.get_pos()
-
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    return None
-
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_ESCAPE:
-                        return None
-                    if evento.key == pygame.K_TAB:
-                        return "reiniciar"
-
-                    if evento.key in teclas:
-                        return teclas[evento.key] == correta
-
-                if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-                    for indice, botao in enumerate(botoes):
-                        if botao.collidepoint(evento.pos):
-                            return indice == correta
-
-            tela.fill((20, 30, 50))
-
-            titulo = fonte_titulo.render(
+        cabecalho = (
+            LinhaCabecalho(
                 f"FASE {fase} - {self.tipos[fase]}",
-                True,
-                (245, 190, 45)
-            )
-            tela.blit(titulo, titulo.get_rect(center=(largura // 2, 65)))
-
-            texto_pergunta = fonte_pergunta.render(
-                pergunta,
-                True,
-                (255, 255, 255)
-            )
-            tela.blit(
-                texto_pergunta,
-                texto_pergunta.get_rect(center=(largura // 2, 140))
-            )
-
-            for indice, botao in enumerate(botoes):
-                cor_botao = (
-                    (75, 135, 185)
-                    if botao.collidepoint(pos_mouse)
-                    else (50, 85, 125)
-                )
-
-                pygame.draw.rect(tela, cor_botao, botao, border_radius=12)
-
-                texto = fonte_resposta.render(
-                    f"{'ABCD'[indice]}) {respostas[indice]}",
-                    True,
-                    (255, 255, 255)
-                )
-                tela.blit(texto, texto.get_rect(center=botao.center))
-
-            instrucao = fonte_instrucao.render(
-                "Responda com A, B, C ou D  |  TAB reinicia o jogo",
-                True,
-                (190, 200, 215)
-            )
-            tela.blit(
-                instrucao,
-                instrucao.get_rect(center=(largura // 2, altura - 35))
-            )
-
-            pygame.display.flip()
-            clock.tick(60)
-
+                tamanho_fonte=58,
+                cor=(245, 190, 45),
+                y=65,
+            ),
+        )
+        return self.tela_pergunta.fazer(
+            tela,
+            pergunta,
+            respostas,
+            correta,
+            cabecalho,
+            "Responda com A, B, C ou D  |  TAB reinicia o jogo",
+        )

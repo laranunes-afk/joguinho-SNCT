@@ -1,6 +1,38 @@
-import pygame
+from recursos import carregar_imagem, carregar_imagem_recortada
 
-from recursos import carregar_imagem
+
+PROPORCAO_ALTURA_CHAO = 0.35
+QUANTIDADE_TRECHOS_DESENHADOS = 3
+TELAS_PRESERVADAS_ATRAS = 3
+DISTANCIA_MINIMA_PRESERVADA = 1600
+
+ARQUIVOS_DE_FUNDO = {
+    1: "pixilart-drawing (1).png",
+    2: "cenário-2.png",
+    3: "cenário-3.png",
+}
+
+
+def esta_visivel(rect, camera_x, largura_tela, margem=0):
+    """Informa se um retângulo alcança a região visível da câmera."""
+    limite_esquerdo = camera_x - margem
+    limite_direito = camera_x + largura_tela + margem
+    return rect.right > limite_esquerdo and rect.left < limite_direito
+
+
+def manter_objetos_proximos(
+    objetos,
+    camera_x,
+    largura_tela,
+    telas_atras=TELAS_PRESERVADAS_ATRAS,
+):
+    """Descarta objetos muito antigos sem impedir um retorno curto na fase."""
+    distancia_preservada = max(
+        largura_tela * telas_atras,
+        DISTANCIA_MINIMA_PRESERVADA,
+    )
+    limite_descarte = camera_x - distancia_preservada
+    return [objeto for objeto in objetos if objeto.rect.right >= limite_descarte]
 
 
 class Cenario:
@@ -13,79 +45,37 @@ class Cenario:
         self.fase = fase
         self.inicio_mundo = 0
         self.camera_x = 0
-        # Mantém o chão na mesma altura visual em todas as fases.
-        self.altura_chao = int(altura * 0.35)
-        self.y_chao = self.altura - self.altura_chao
+        self.altura_chao = int(altura * PROPORCAO_ALTURA_CHAO)
+        self.y_chao = altura - self.altura_chao
 
-        self.fundo = pygame.Surface((self.largura, self.altura))
-        self.chao = pygame.Surface((self.largura, self.altura_chao))
-
-        if fase == 1:
-            self._criar_floresta()
-        elif fase == 2:
-            self._criar_deserto()
-        else:
-            self._criar_noite_gelada()
-
-        self._criar_chao_comum()
-
-    def _criar_floresta(self):
-        """Desenha o fundo e o chão usados na primeira fase."""
-        fundo_floresta = carregar_imagem(
-            "pixilart-drawing (1).png",
-            (self.largura, self.altura)
+        # Mantém o comportamento anterior: fases desconhecidas usam o fundo 3.
+        arquivo_fundo = ARQUIVOS_DE_FUNDO.get(fase, ARQUIVOS_DE_FUNDO[3])
+        self.fundo = carregar_imagem(
+            arquivo_fundo,
+            (self.largura, self.altura),
         )
-        self.fundo.blit(fundo_floresta, (0, 0))
-
-    def _criar_deserto(self):
-        """Monta o cenário da segunda fase usando as imagens do deserto."""
-        fundo_deserto = carregar_imagem(
-            "cenário-2.png",
-            (self.largura, self.altura)
-        )
-        self.fundo.blit(fundo_deserto, (0, 0))
-
-    def _criar_chao_comum(self):
-        """Aplica a mesma imagem de chão em todas as fases."""
-        imagem_original = carregar_imagem(
+        self.chao = carregar_imagem_recortada(
             "Chão.png",
-            fundo_transparente=True
+            (self.largura, self.altura_chao),
         )
-        limites = pygame.mask.from_surface(
-            imagem_original
-        ).get_bounding_rects()
-        area_chao = limites[0].unionall(limites)
-        imagem_chao = imagem_original.subsurface(area_chao).copy()
-        imagem_chao = pygame.transform.scale(
-            imagem_chao,
-            (self.largura, self.altura_chao)
-        )
-        self.chao.fill((0, 0, 0, 0))
-        self.chao.blit(imagem_chao, (0, 0))
 
-    def _criar_noite_gelada(self):
-        """Carrega o fundo estrelado usado na terceira fase."""
-        fundo_noturno = carregar_imagem(
-            "cenário-3.png",
-            (self.largura, self.altura)
-        )
-        self.fundo.blit(fundo_noturno, (0, 0))
+    def _desenhar_repetido(self, tela, superficie, y):
+        """Repete uma camada para preencher a tela durante o movimento."""
+        primeiro_trecho = int(self.camera_x // self.largura)
+        for indice in range(
+            primeiro_trecho,
+            primeiro_trecho + QUANTIDADE_TRECHOS_DESENHADOS,
+        ):
+            x = indice * self.largura - self.camera_x
+            tela.blit(superficie, (x, y))
 
     def desenhar_fundo(self, tela):
         """Repete o fundo para cobrir a região visível da câmera."""
-        inicio = int(self.camera_x // self.largura)
-
-        for indice in range(inicio, inicio + 3):
-            x = indice * self.largura - self.camera_x
-            tela.blit(self.fundo, (x, 0))
+        self._desenhar_repetido(tela, self.fundo, 0)
 
     def desenhar_chao(self, tela):
         """Repete a superfície do chão ao longo do cenário."""
-        inicio = int(self.camera_x // self.largura)
-
-        for indice in range(inicio, inicio + 3):
-            x = indice * self.largura - self.camera_x
-            tela.blit(self.chao, (x, self.y_chao))
+        self._desenhar_repetido(tela, self.chao, self.y_chao)
 
     def desenhar(self, tela):
         """Desenha o fundo e o chão da fase."""

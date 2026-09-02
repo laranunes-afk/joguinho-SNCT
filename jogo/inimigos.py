@@ -2,35 +2,56 @@ import random
 
 import pygame
 
+from cenario import esta_visivel, manter_objetos_proximos
+
+
+LARGURA_INIMIGO = 46
+ALTURA_INIMIGO = 58
+ALCANCE_PATRULHA = 110
+VELOCIDADE_PATRULHA = 2
+MARGEM_BURACO = 8
+
+DISTANCIAS_POR_FASE = {
+    1: (450, 600),
+    2: (350, 500),
+    3: (280, 420),
+}
+TELAS_PARA_GERAR = 2
+MARGEM_ROTA = 10
+MARGEM_CHECKPOINT = (260, 0)
+MARGEM_PEDRA = (120, 0)
+MARGEM_VISIBILIDADE = 100
+TOLERANCIA_PISADA = 12
+INTENSIDADE_REBOTE = 0.55
+
 
 class Inimigo:
     """Inimigo que patrulha uma pequena área do cenário."""
 
     def __init__(self, x, y_chao):
         """Cria um inimigo e define os limites de sua patrulha."""
-        self.rect = pygame.Rect(x, y_chao - 58, 46, 58)
-        self.limite_esquerdo = x - 110
-        self.limite_direito = x + 110
-        self.velocidade = 2
+        self.rect = pygame.Rect(
+            x,
+            y_chao - ALTURA_INIMIGO,
+            LARGURA_INIMIGO,
+            ALTURA_INIMIGO,
+        )
+        self.limite_esquerdo = x - ALCANCE_PATRULHA
+        self.limite_direito = x + ALCANCE_PATRULHA
+        self.velocidade = VELOCIDADE_PATRULHA
         self.derrotado = False
 
-    def atualizar(self, pedras=(), buracos=(), areas_livres=(), outros=()):
-        """Patrulha a área e muda de direção diante de bloqueios."""
-        if self.derrotado:
-            return
-
-        x_anterior = self.rect.x
-        self.rect.x += self.velocidade
-
-        perto_de_buraco = any(
-            self.rect.right + 8 > buraco.rect.left
-            and self.rect.left - 8 < buraco.rect.right
+    def _esta_perto_de_buraco(self, buracos):
+        return any(
+            self.rect.right + MARGEM_BURACO > buraco.rect.left
+            and self.rect.left - MARGEM_BURACO < buraco.rect.right
             for buraco in buracos
         )
-        colidiu_com_objeto = (
+
+    def _colidiu_com_bloqueio(self, pedras, areas_livres, outros):
+        return (
             any(self.rect.colliderect(pedra.rect) for pedra in pedras)
             or any(self.rect.colliderect(area) for area in areas_livres)
-            or perto_de_buraco
             or any(
                 outro is not self
                 and not outro.derrotado
@@ -39,7 +60,19 @@ class Inimigo:
             )
         )
 
-        if colidiu_com_objeto:
+    def atualizar(self, pedras=(), buracos=(), areas_livres=(), outros=()):
+        """Patrulha a área e muda de direção diante de bloqueios."""
+        if self.derrotado:
+            return
+
+        x_anterior = self.rect.x
+        self.rect.x += self.velocidade
+        encontrou_bloqueio = (
+            self._esta_perto_de_buraco(buracos)
+            or self._colidiu_com_bloqueio(pedras, areas_livres, outros)
+        )
+
+        if encontrou_bloqueio:
             self.rect.x = x_anterior
             self.velocidade *= -1
             return
@@ -59,56 +92,56 @@ class Inimigo:
         inimigo_na_tela = self.rect.copy()
         inimigo_na_tela.x -= int(camera_x)
 
-        # O inimigo ainda não possui imagem própria.
+        # Arte provisória construída com formas simples.
         pygame.draw.rect(
             tela,
             (120, 55, 135),
             (inimigo_na_tela.left + 5, inimigo_na_tela.top + 22, 36, 31),
-            border_radius=8
+            border_radius=8,
         )
         pygame.draw.circle(
             tela,
             (170, 90, 180),
             (inimigo_na_tela.centerx, inimigo_na_tela.top + 16),
-            17
+            17,
         )
         pygame.draw.circle(
             tela,
             (255, 255, 255),
             (inimigo_na_tela.centerx - 6, inimigo_na_tela.top + 14),
-            4
+            4,
         )
         pygame.draw.circle(
             tela,
             (255, 255, 255),
             (inimigo_na_tela.centerx + 6, inimigo_na_tela.top + 14),
-            4
+            4,
         )
         pygame.draw.circle(
             tela,
             (35, 25, 45),
             (inimigo_na_tela.centerx - 6, inimigo_na_tela.top + 15),
-            2
+            2,
         )
         pygame.draw.circle(
             tela,
             (35, 25, 45),
             (inimigo_na_tela.centerx + 6, inimigo_na_tela.top + 15),
-            2
+            2,
         )
         pygame.draw.line(
             tela,
             (55, 35, 70),
             (inimigo_na_tela.left + 9, inimigo_na_tela.bottom),
             (inimigo_na_tela.left + 16, inimigo_na_tela.bottom - 8),
-            4
+            4,
         )
         pygame.draw.line(
             tela,
             (55, 35, 70),
             (inimigo_na_tela.right - 9, inimigo_na_tela.bottom),
             (inimigo_na_tela.right - 16, inimigo_na_tela.bottom - 8),
-            4
+            4,
         )
 
 
@@ -120,7 +153,7 @@ class Inimigos:
         largura_tela,
         y_chao,
         areas_livres=None,
-        numero_fase=1
+        numero_fase=1,
     ):
         """Prepara a geração e o controle dos inimigos da fase."""
         self.largura_tela = largura_tela
@@ -128,66 +161,84 @@ class Inimigos:
         self.areas_livres = areas_livres or []
         self.inimigos = []
         self.numero_fase = max(1, min(3, numero_fase))
-        self.distancias_por_fase = {
-            1: (450, 600),
-            2: (350, 500),
-            3: (280, 420),
-        }
-        distancia_minima, distancia_maxima = self.distancias_por_fase[
-            self.numero_fase
-        ]
-        self.proxima_posicao = random.randint(
-            distancia_minima,
-            distancia_maxima
-        )
+        self.distancias_por_fase = dict(DISTANCIAS_POR_FASE)
+        self._intervalo_geracao = self.distancias_por_fase[self.numero_fase]
+        self.proxima_posicao = random.randint(*self._intervalo_geracao)
 
     @staticmethod
     def _rota_sobre_buraco(inimigo, buracos):
-        """Verifica se a área de patrulha planejada cruza um buraco."""
-        rota = inimigo.rect.inflate(240, 0)
+        """Verifica se a área real da patrulha cruza um buraco."""
+        largura_rota = (
+            inimigo.limite_direito
+            - inimigo.limite_esquerdo
+            + inimigo.rect.width
+        )
+        rota = pygame.Rect(
+            inimigo.limite_esquerdo,
+            inimigo.rect.top,
+            largura_rota,
+            inimigo.rect.height,
+        ).inflate(MARGEM_ROTA * 2, 0)
         return any(
             rota.right > buraco.rect.left
             and rota.left < buraco.rect.right
             for buraco in buracos
         )
 
-    def atualizar(self, camera_x, pedras=(), buracos=()):
-        """Gera inimigos em posições seguras e atualiza suas patrulhas."""
-        limite_geracao = camera_x + self.largura_tela * 2
+    def _esta_em_posicao_segura(self, inimigo, pedras, buracos):
+        perto_de_checkpoint = any(
+            inimigo.rect.inflate(*MARGEM_CHECKPOINT).colliderect(area)
+            for area in self.areas_livres
+        )
+        perto_de_pedra = any(
+            inimigo.rect.inflate(*MARGEM_PEDRA).colliderect(pedra.rect)
+            for pedra in pedras
+        )
+        return (
+            not perto_de_checkpoint
+            and not perto_de_pedra
+            and not self._rota_sobre_buraco(inimigo, buracos)
+        )
 
+    def _gerar_ate(self, limite_geracao, pedras, buracos):
+        """Gera inimigos em posições seguras até o limite indicado."""
         while self.proxima_posicao < limite_geracao:
             inimigo = Inimigo(self.proxima_posicao, self.y_chao)
-            perto_de_checkpoint = any(
-                inimigo.rect.inflate(260, 0).colliderect(area)
-                for area in self.areas_livres
-            )
-            perto_de_pedra = any(
-                inimigo.rect.inflate(120, 0).colliderect(pedra.rect)
-                for pedra in pedras
-            )
-
-            if (
-                not perto_de_checkpoint
-                and not perto_de_pedra
-                and not self._rota_sobre_buraco(inimigo, buracos)
-            ):
+            if self._esta_em_posicao_segura(inimigo, pedras, buracos):
                 self.inimigos.append(inimigo)
+            self.proxima_posicao += random.randint(*self._intervalo_geracao)
 
-            distancia_minima, distancia_maxima = self.distancias_por_fase[
-                self.numero_fase
-            ]
-            self.proxima_posicao += random.randint(
-                distancia_minima,
-                distancia_maxima
+    def _descartar_distantes_e_derrotados(self, camera_x):
+        proximos = manter_objetos_proximos(
+            self.inimigos,
+            camera_x,
+            self.largura_tela,
+        )
+        self.inimigos = [
+            inimigo for inimigo in proximos if not inimigo.derrotado
+        ]
+
+    def _atualizar_patrulhas(self, pedras, buracos):
+        """Atualiza usando apenas vizinhos laterais, evitando busca O(n²)."""
+        ordenados = sorted(self.inimigos, key=lambda inimigo: inimigo.rect.left)
+        for indice, inimigo in enumerate(ordenados):
+            vizinhos = (
+                ordenados[max(0, indice - 1):indice]
+                + ordenados[indice + 1:indice + 2]
             )
-
-        for inimigo in self.inimigos:
             inimigo.atualizar(
                 pedras,
                 buracos,
                 self.areas_livres,
-                self.inimigos
+                vizinhos,
             )
+
+    def atualizar(self, camera_x, pedras=(), buracos=()):
+        """Gera inimigos seguros e atualiza somente os ainda relevantes."""
+        self._descartar_distantes_e_derrotados(camera_x)
+        limite_geracao = camera_x + self.largura_tela * TELAS_PARA_GERAR
+        self._gerar_ate(limite_geracao, pedras, buracos)
+        self._atualizar_patrulhas(pedras, buracos)
 
     def verificar_colisao(self, personagem, rect_anterior):
         """Retorna 'derrotou', 'atingido' ou None conforme o contato."""
@@ -197,15 +248,14 @@ class Inimigos:
 
             pulou_na_cabeca = (
                 personagem.velocidade_y > 0
-                and rect_anterior.bottom <= inimigo.rect.top + 12
+                and rect_anterior.bottom <= inimigo.rect.top + TOLERANCIA_PISADA
                 and personagem.rect.bottom >= inimigo.rect.top
             )
 
             if pulou_na_cabeca:
                 inimigo.derrotado = True
                 personagem.rect.bottom = inimigo.rect.top
-                personagem.velocidade_y = personagem.forca_pulo * 0.55
-                personagem.no_chao = False
+                personagem.rebater(INTENSIDADE_REBOTE)
                 return "derrotou"
 
             return "atingido"
@@ -214,12 +264,11 @@ class Inimigos:
 
     def desenhar(self, tela, camera_x):
         """Desenha somente os inimigos próximos à tela."""
-        limite_esquerdo = camera_x - 100
-        limite_direito = camera_x + self.largura_tela + 100
-
         for inimigo in self.inimigos:
-            if (
-                inimigo.rect.right > limite_esquerdo
-                and inimigo.rect.left < limite_direito
+            if esta_visivel(
+                inimigo.rect,
+                camera_x,
+                self.largura_tela,
+                MARGEM_VISIBILIDADE,
             ):
                 inimigo.desenhar(tela, camera_x)

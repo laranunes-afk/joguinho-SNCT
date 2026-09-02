@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 
 import pygame
@@ -7,9 +8,17 @@ RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 PASTA_IMAGENS = RAIZ_PROJETO / "Imagens"
 
 
-def carregar_imagem(nome, tamanho=None, fundo_transparente=False):
-    """Carrega uma imagem do projeto e ajusta seu tamanho quando necessário."""
-    imagem_original = pygame.image.load(PASTA_IMAGENS / nome)
+def _normalizar_tamanho(tamanho):
+    """Converte tamanhos mutáveis em uma chave segura para o cache."""
+    if tamanho is None:
+        return None
+    return tuple(map(int, tamanho))
+
+
+@lru_cache(maxsize=128)
+def _carregar_imagem_em_cache(nome, tamanho, fundo_transparente):
+    """Carrega e prepara a superfície mestre compartilhada apenas internamente."""
+    imagem_original = pygame.image.load(str(PASTA_IMAGENS / nome))
     tem_transparencia = imagem_original.get_masks()[3] != 0
     imagem = (
         imagem_original.convert_alpha()
@@ -27,16 +36,39 @@ def carregar_imagem(nome, tamanho=None, fundo_transparente=False):
     return imagem
 
 
-def carregar_imagem_recortada(nome, tamanho=None):
-    """Carrega somente a area visivel da arte e opcionalmente redimensiona."""
-    imagem = carregar_imagem(nome, fundo_transparente=True)
-    limites = pygame.mask.from_surface(imagem).get_bounding_rects()
-    if limites:
-        area_visivel = limites[0].unionall(limites)
+def carregar_imagem(nome, tamanho=None, fundo_transparente=False):
+    """Carrega uma imagem e devolve uma cópia independente para o chamador."""
+    tamanho = _normalizar_tamanho(tamanho)
+    imagem = _carregar_imagem_em_cache(
+        str(nome),
+        tamanho,
+        bool(fundo_transparente),
+    )
+    # A cópia impede que set_alpha, fill ou blit alterem a versão em cache.
+    return imagem.copy()
+
+
+@lru_cache(maxsize=128)
+def _carregar_imagem_recortada_em_cache(nome, tamanho):
+    """Mantém em cache o recorte pronto, inclusive suas transformações."""
+    imagem = _carregar_imagem_em_cache(nome, None, True)
+    # O limite 128 equivale ao limiar padrão usado pela máscara anterior.
+    area_visivel = imagem.get_bounding_rect(128)
+    if area_visivel.width and area_visivel.height:
         imagem = imagem.subsurface(area_visivel).copy()
+    else:
+        imagem = imagem.copy()
+
     if tamanho is not None:
         imagem = pygame.transform.scale(imagem, tamanho)
     return imagem
+
+
+def carregar_imagem_recortada(nome, tamanho=None):
+    """Carrega somente a área visível e devolve uma superfície independente."""
+    tamanho = _normalizar_tamanho(tamanho)
+    imagem = _carregar_imagem_recortada_em_cache(str(nome), tamanho)
+    return imagem.copy()
 
 
 def renderizar_texto_contornado(

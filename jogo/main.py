@@ -1,476 +1,303 @@
+from enum import Enum, auto
+
 import pygame
 
-from cenario import Cenario
-from checkpoint import Checkpoint
 from configuracoes_musica import iniciar_musica, parar_musica
 from configuracoes_tela import (
     FPS,
-    RECUO_CAMERA_RETORNO,
+    TOTAL_FASES,
     atualizar_camera_personagem,
     criar_tela,
     limitar_personagem_na_tela,
 )
+from estado_partida import EstadoPartida
+from fabrica_fase import reposicionar
 from fase_final import FaseFinal
 from hud import desenhar_hud
-from inimigos import Inimigos
 from menu import desenhar_lista_controles, tela_inicial
-from moedas import Moedas
-from obstaculos import Obstaculos
-from personagem import Personagem
-from perguntas import Perguntas
-from recursos import renderizar_texto_contornado
 from tela_final import TelaFinal
 
 
-def adicionar_texto_temporario(
-    textos,
-    personagem,
-    texto,
-    cor,
-    duracao=1100
-):
-    """Cria um aviso flutuante ancorado acima da personagem."""
-    textos.append(
-        {
-            "texto": texto,
-            "cor": cor,
-            "x": personagem.rect.centerx,
-            "y": personagem.rect.top - 12,
-            "inicio": pygame.time.get_ticks(),
-            "duracao": duracao,
-        }
-    )
+COR_RECOMPENSA = (255, 205, 45)
+COR_PERDA = (245, 65, 65)
+RECOMPENSA_CHECKPOINT = 5
+RECOMPENSA_INIMIGO = 5
 
 
-def desenhar_textos_temporarios(tela, textos, camera_x):
-    """Desenha avisos pixelados que sobem e desaparecem suavemente."""
-    agora = pygame.time.get_ticks()
-    fonte_base = pygame.font.Font(None, 18)
-    ativos = []
+class AcaoQuadro(Enum):
+    """Decisões que fazem o laço principal mudar de caminho."""
 
-    for aviso in textos:
-        decorrido = agora - aviso["inicio"]
-        duracao = aviso["duracao"]
-        if decorrido >= duracao:
-            continue
-
-        progresso = decorrido / duracao
-        superficie_base = renderizar_texto_contornado(
-            fonte_base,
-            aviso["texto"],
-            aviso["cor"],
-        )
-        superficie = pygame.transform.scale(
-            superficie_base,
-            (superficie_base.get_width() * 2, superficie_base.get_height() * 2)
-        )
-        superficie.set_alpha(int(255 * (1 - progresso)))
-        rect = superficie.get_rect(
-            midbottom=(
-                int(aviso["x"] - camera_x),
-                int(aviso["y"] - progresso * 38)
-            )
-        )
-        tela.blit(superficie, rect)
-        ativos.append(aviso)
-
-    textos[:] = ativos
+    CONTINUAR = auto()
+    MUDOU_FASE = auto()
+    REINICIAR = auto()
+    SAIR = auto()
+    FINALIZAR = auto()
 
 
-def criar_fase(numero_fase, largura, altura):
-    """Cria todos os objetos necessários para uma fase."""
+class Jogo:
+    """Coordena as peças da partida sem implementar cada uma delas."""
 
-    cenario = Cenario(
-        largura,
-        altura,
-        numero_fase
-    )
+    def __init__(self, tela, clock=None):
+        self.tela = tela
+        self.largura, self.altura = tela.get_size()
+        self.clock = clock or pygame.time.Clock()
+        self.estado = EstadoPartida(self.largura, self.altura)
+        self.jogar_novamente = False
 
-    personagem = Personagem(
-        30,
-        cenario.y_chao - 80
-    )
+        self.fonte_cronometro = pygame.font.Font(None, 48)
+        self.fonte_fase = pygame.font.Font(None, 42)
+        self.fonte_lupas = pygame.font.Font(None, 36)
 
-    primeiro_checkpoint = largura + 250
-    distancia_checkpoints = max(1100, largura)
-
-    checkpoints = [
-        Checkpoint(
-            primeiro_checkpoint + indice * distancia_checkpoints,
-            cenario.y_chao
-        )
-        for indice in range(2)
-    ]
-
-    areas_livres = [
-        checkpoint.area_livre
-        for checkpoint in checkpoints
-    ]
-
-    obstaculos = Obstaculos(
-        largura,
-        cenario.y_chao,
-        areas_livres
-    )
-    inimigos = Inimigos(
-        largura,
-        cenario.y_chao,
-        areas_livres,
-        numero_fase
-    )
-
-    moedas = Moedas(
-        largura,
-        cenario.y_chao,
-        areas_livres
-    )
-    moedas.atualizar(0, obstaculos.pedras, obstaculos.buracos)
-
-    return cenario, personagem, checkpoints, obstaculos, inimigos, moedas
-
-
-def reposicionar(personagem, cenario, ponto_retorno_x):
-    """Leva a personagem ao último ponto seguro e restaura sua queda."""
-    personagem.rect.left = ponto_retorno_x + personagem.margem_hitbox_x
-    personagem.rect.bottom = cenario.y_chao
-    personagem.velocidade_y = 0
-    personagem.no_chao = True
-    personagem.caindo_no_buraco = False
-
-    cenario.camera_x = max(
-        cenario.inicio_mundo,
-        ponto_retorno_x - RECUO_CAMERA_RETORNO
-    )
-
-
-def jogo():
-    """Executa uma partida completa, incluindo as três fases e o desafio final."""
-    pygame.init()
-
-    tela, largura, altura = criar_tela()
-
-    clock = pygame.time.Clock()
-    fonte_cronometro = pygame.font.Font(None, 48)
-    fonte_fase = pygame.font.Font(None, 42)
-    fonte_moedas = pygame.font.Font(None, 36)
-    tempo_inicio = None
-    segundos_decorridos = 0
-    moedas_coletadas = 0
-    textos_temporarios = []
-    mostrar_controles = True
-
-    perguntas = Perguntas()
-    numero_fase = 1
-
-    cenario, personagem, checkpoints, obstaculos, inimigos, moedas = criar_fase(
-        numero_fase,
-        largura,
-        altura
-    )
-    ponto_retorno_x = RECUO_CAMERA_RETORNO
-
-    rodando = True
-
-    while rodando:
-        reiniciar_por_tab = False
-
+    @staticmethod
+    def _ler_eventos():
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
-                rodando = False
+                return AcaoQuadro.SAIR
+            if evento.type != pygame.KEYDOWN:
+                continue
+            if evento.key == pygame.K_ESCAPE:
+                return AcaoQuadro.SAIR
+            if evento.key == pygame.K_TAB:
+                return AcaoQuadro.REINICIAR
+        return AcaoQuadro.CONTINUAR
 
-            if (
-                evento.type == pygame.KEYDOWN
-                and evento.key == pygame.K_ESCAPE
-            ):
-                rodando = False
-
-            if (
-                evento.type == pygame.KEYDOWN
-                and evento.key == pygame.K_TAB
-            ):
-                reiniciar_por_tab = True
-
-        if not rodando:
-            break
-
-        if reiniciar_por_tab:
-            numero_fase = 1
-            perguntas = Perguntas()
-            (
-                cenario,
-                personagem,
-                checkpoints,
-                obstaculos,
-                inimigos,
-                moedas
-            ) = criar_fase(numero_fase, largura, altura)
-            ponto_retorno_x = RECUO_CAMERA_RETORNO
-            moedas_coletadas = 0
-            tempo_inicio = None
-            segundos_decorridos = 0
-            mostrar_controles = True
-            continue
+    def _atualizar_entidades(self):
+        estado = self.estado
+        fase = estado.cenario
+        personagem = estado.personagem
 
         x_anterior = personagem.rect.x
         rect_anterior = personagem.rect.copy()
         personagem.atualizar(
-            cenario.y_chao,
-            obstaculos.personagem_esta_sobre_buraco
+            fase.y_chao,
+            estado.obstaculos.personagem_esta_sobre_buraco,
+        )
+        if estado.houve_movimento(x_anterior):
+            estado.mostrar_controles = False
+
+        limitar_personagem_na_tela(personagem, fase.camera_x, self.largura)
+        estado.obstaculos.atualizar(fase.camera_x)
+        estado.inimigos.atualizar(
+            fase.camera_x,
+            estado.obstaculos.pedras,
+            estado.obstaculos.buracos,
+        )
+        estado.moedas.atualizar(
+            fase.camera_x,
+            estado.obstaculos.pedras,
+            estado.obstaculos.buracos,
         )
 
-        if personagem.rect.x != x_anterior:
-            mostrar_controles = False
+        self._coletar_lupas()
+        return x_anterior, rect_anterior
 
-        limitar_personagem_na_tela(personagem, cenario.camera_x, largura)
-
-        obstaculos.atualizar(cenario.camera_x)
-        inimigos.atualizar(
-            cenario.camera_x,
-            obstaculos.pedras,
-            obstaculos.buracos
-        )
-        moedas.atualizar(
-            cenario.camera_x,
-            obstaculos.pedras,
-            obstaculos.buracos
-        )
-        lupas_apanhadas = moedas.coletar(personagem)
-        moedas_coletadas += lupas_apanhadas
-        for _ in range(lupas_apanhadas):
-            adicionar_texto_temporario(
-                textos_temporarios,
-                personagem,
+    def _coletar_lupas(self):
+        quantidade = self.estado.moedas.coletar(self.estado.personagem)
+        self.estado.lupas += quantidade
+        for _ in range(quantidade):
+            self.estado.avisos.adicionar(
+                self.estado.personagem,
                 "+1 LUPA",
-                (255, 205, 45)
+                COR_RECOMPENSA,
             )
-        deve_retornar = False
-        lupas_perdidas = 0
-        mudou_fase = False
 
-        for checkpoint in checkpoints:
-            if checkpoint.foi_alcancado(personagem):
-                resposta_correta = perguntas.fazer(
-                    tela,
-                    numero_fase
-                )
+    def _processar_checkpoint(self):
+        estado = self.estado
+        for checkpoint in estado.checkpoints:
+            if not checkpoint.foi_alcancado(estado.personagem):
+                continue
 
-                if resposta_correta == "reiniciar":
-                    numero_fase = 1
-                    perguntas = Perguntas()
-                    (
-                        cenario,
-                        personagem,
-                        checkpoints,
-                        obstaculos,
-                        inimigos,
-                        moedas
-                    ) = criar_fase(numero_fase, largura, altura)
-                    ponto_retorno_x = RECUO_CAMERA_RETORNO
-                    moedas_coletadas = 0
-                    tempo_inicio = None
-                    segundos_decorridos = 0
-                    mostrar_controles = True
-                    mudou_fase = True
-                elif resposta_correta is None:
-                    rodando = False
-                elif resposta_correta:
-                    checkpoint.ativar()
-                    ponto_retorno_x = checkpoint.posicao_retorno
-                    moedas_coletadas += 5
-                    adicionar_texto_temporario(
-                        textos_temporarios,
-                        personagem,
-                        "+5 LUPAS",
-                        (255, 205, 45),
-                        duracao=2400
-                    )
+            resposta = estado.perguntas.fazer(self.tela, estado.numero_fase)
+            if resposta == "reiniciar":
+                return AcaoQuadro.REINICIAR, False, 0
+            if resposta is None:
+                return AcaoQuadro.SAIR, False, 0
+            if not resposta:
+                return AcaoQuadro.CONTINUAR, True, estado.perder_lupas(4)
 
-                    if all(item.ativado for item in checkpoints):
-                        if numero_fase == 3:
-                            resultado_final, moedas_finais = FaseFinal(
-                                largura,
-                                altura
-                            ).jogar(
-                                tela,
-                                moedas_coletadas,
-                                tempo_inicio
-                            )
-                            moedas_coletadas = moedas_finais
+            checkpoint.ativar()
+            estado.ponto_retorno_x = checkpoint.posicao_retorno
+            estado.lupas += RECOMPENSA_CHECKPOINT
+            estado.avisos.adicionar(
+                estado.personagem,
+                f"+{RECOMPENSA_CHECKPOINT} LUPAS",
+                COR_RECOMPENSA,
+                duracao=2400,
+            )
 
-                            if resultado_final == "venceu":
-                                if tempo_inicio is not None:
-                                    segundos_decorridos = (
-                                        pygame.time.get_ticks() - tempo_inicio
-                                    ) // 1000
+            if not all(item.ativado for item in estado.checkpoints):
+                return AcaoQuadro.CONTINUAR, False, 0
+            if estado.numero_fase < TOTAL_FASES:
+                estado.avancar_fase()
+                return AcaoQuadro.MUDOU_FASE, False, 0
+            return self._executar_fase_final(), False, 0
 
-                                jogar_novamente = TelaFinal().mostrar(
-                                    tela,
-                                    segundos_decorridos,
-                                    moedas_coletadas
-                                )
-                                return jogar_novamente
+        return AcaoQuadro.CONTINUAR, False, 0
 
-                            if resultado_final == "sair":
-                                rodando = False
-                            else:
-                                numero_fase = 1
-                                perguntas = Perguntas()
-                                (
-                                    cenario,
-                                    personagem,
-                                    checkpoints,
-                                    obstaculos,
-                                    inimigos,
-                                    moedas
-                                ) = criar_fase(
-                                    numero_fase,
-                                    largura,
-                                    altura
-                                )
-                                ponto_retorno_x = RECUO_CAMERA_RETORNO
-                                moedas_coletadas = 0
-                                if resultado_final == "reiniciar_total":
-                                    tempo_inicio = None
-                                    segundos_decorridos = 0
-                                    mostrar_controles = True
-                                mudou_fase = True
-                        else:
-                            numero_fase += 1
-                            (
-                                cenario,
-                                personagem,
-                                checkpoints,
-                                obstaculos,
-                                inimigos,
-                                moedas
-                            ) = criar_fase(
-                                numero_fase,
-                                largura,
-                                altura
-                            )
-                            ponto_retorno_x = RECUO_CAMERA_RETORNO
-                            # O bônus do checkpoint acompanha a personagem
-                            # e começa novamente ao abrir a próxima fase.
-                            if textos_temporarios:
-                                bonus = textos_temporarios[-1]
-                                bonus["x"] = personagem.rect.centerx
-                                bonus["y"] = personagem.rect.top - 12
-                                bonus["inicio"] = pygame.time.get_ticks()
-                            mudou_fase = True
-                else:
-                    deve_retornar = True
-                    lupas_perdidas = min(4, moedas_coletadas)
-                    moedas_coletadas -= lupas_perdidas
+    def _executar_fase_final(self):
+        estado = self.estado
+        resultado, estado.lupas = FaseFinal(
+            self.largura,
+            self.altura,
+        ).jogar(self.tela, estado.lupas, estado.tempo_inicio)
 
-                break
+        if resultado == "venceu":
+            self.jogar_novamente = TelaFinal().mostrar(
+                self.tela,
+                estado.segundos_decorridos,
+                estado.lupas,
+            )
+            return AcaoQuadro.FINALIZAR
+        if resultado == "sair":
+            return AcaoQuadro.SAIR
+        if resultado in {"reiniciar", "reiniciar_total"}:
+            estado.reiniciar(
+                reiniciar_cronometro=resultado == "reiniciar_total"
+            )
+            return AcaoQuadro.MUDOU_FASE
 
-        if not rodando:
-            break
+        raise ValueError(f"Resultado desconhecido da fase final: {resultado!r}")
 
-        if mudou_fase:
-            continue
+    def _processar_perigos(self, rect_anterior, deve_retornar, lupas_perdidas):
+        estado = self.estado
+        personagem = estado.personagem
 
-        if personagem.rect.top >= altura:
-            # Ao cair, retorna ao início ou ao último checkpoint ativado.
+        caiu = personagem.rect.top >= self.altura
+        bateu_em_pedra = estado.obstaculos.colidiu_com(personagem)
+        if caiu or bateu_em_pedra:
             deve_retornar = True
             if not lupas_perdidas:
-                lupas_perdidas = min(2, moedas_coletadas)
-                moedas_coletadas -= lupas_perdidas
-        elif obstaculos.colidiu_com(personagem):
-            deve_retornar = True
-            if not lupas_perdidas:
-                lupas_perdidas = min(2, moedas_coletadas)
-                moedas_coletadas -= lupas_perdidas
+                lupas_perdidas = estado.perder_lupas(2)
 
-        resultado_inimigo = inimigos.verificar_colisao(
+        resultado = estado.inimigos.verificar_colisao(
             personagem,
-            rect_anterior
+            rect_anterior,
         )
-        if resultado_inimigo == "derrotou":
-            moedas_coletadas += 5
-            adicionar_texto_temporario(
-                textos_temporarios,
+        if resultado == "derrotou":
+            estado.lupas += RECOMPENSA_INIMIGO
+            estado.avisos.adicionar(
                 personagem,
-                "+5 LUPAS",
-                (255, 205, 45)
+                f"+{RECOMPENSA_INIMIGO} LUPAS",
+                COR_RECOMPENSA,
             )
-        elif resultado_inimigo == "atingido":
+        elif resultado == "atingido":
             deve_retornar = True
             if not lupas_perdidas:
-                lupas_perdidas = min(2, moedas_coletadas)
-                moedas_coletadas -= lupas_perdidas
+                lupas_perdidas = estado.perder_lupas(2)
 
-        if deve_retornar:
-            reposicionar(
-                personagem,
-                cenario,
-                ponto_retorno_x
-            )
-            if lupas_perdidas:
-                adicionar_texto_temporario(
-                    textos_temporarios,
-                    personagem,
-                    f"-{lupas_perdidas} LUPAS",
-                    (245, 65, 65)
-                )
-        elif tempo_inicio is None and personagem.rect.x != x_anterior:
-            tempo_inicio = pygame.time.get_ticks()
+        return deve_retornar, lupas_perdidas
 
-        atualizar_camera_personagem(cenario, personagem)
-        limitar_personagem_na_tela(personagem, cenario.camera_x, largura)
+    def _resolver_retorno(self, deve_retornar, lupas_perdidas):
+        if not deve_retornar:
+            return
 
-        cenario.desenhar(tela)
-        moedas.desenhar(tela, cenario.camera_x)
-        obstaculos.desenhar(tela, cenario.camera_x)
-        inimigos.desenhar(tela, cenario.camera_x)
-
-        for checkpoint in checkpoints:
-            checkpoint.desenhar(
-                tela,
-                cenario.camera_x,
-                largura
+        estado = self.estado
+        reposicionar(
+            estado.personagem,
+            estado.cenario,
+            estado.ponto_retorno_x,
+        )
+        if lupas_perdidas:
+            estado.avisos.adicionar(
+                estado.personagem,
+                f"-{lupas_perdidas} LUPAS",
+                COR_PERDA,
             )
 
-        personagem.desenhar(tela, cenario.camera_x)
-        desenhar_textos_temporarios(
-            tela,
-            textos_temporarios,
-            cenario.camera_x
+    def _atualizar(self):
+        estado = self.estado
+        x_anterior, rect_anterior = self._atualizar_entidades()
+        acao, deve_retornar, lupas_perdidas = self._processar_checkpoint()
+        if acao is not AcaoQuadro.CONTINUAR:
+            return acao
+
+        deve_retornar, lupas_perdidas = self._processar_perigos(
+            rect_anterior,
+            deve_retornar,
+            lupas_perdidas,
         )
+        self._resolver_retorno(deve_retornar, lupas_perdidas)
+        if not deve_retornar and estado.houve_movimento(x_anterior):
+            estado.iniciar_cronometro()
 
-        if mostrar_controles:
-            desenhar_lista_controles(tela, largura, altura)
-
-        segundos_decorridos = desenhar_hud(
-            tela,
-            largura,
-            numero_fase,
-            fonte_cronometro,
-            fonte_fase,
-            fonte_moedas,
-            tempo_inicio,
-            moedas_coletadas
+        atualizar_camera_personagem(estado.cenario, estado.personagem)
+        limitar_personagem_na_tela(
+            estado.personagem,
+            estado.cenario.camera_x,
+            self.largura,
         )
+        return AcaoQuadro.CONTINUAR
 
+    def _desenhar(self):
+        estado = self.estado
+        camera_x = estado.cenario.camera_x
+        estado.cenario.desenhar(self.tela)
+        estado.moedas.desenhar(self.tela, camera_x)
+        estado.obstaculos.desenhar(self.tela, camera_x)
+        estado.inimigos.desenhar(self.tela, camera_x)
+        for checkpoint in estado.checkpoints:
+            checkpoint.desenhar(self.tela, camera_x, self.largura)
+        estado.personagem.desenhar(self.tela, camera_x)
+        estado.avisos.desenhar(self.tela, camera_x)
+
+        if estado.mostrar_controles:
+            desenhar_lista_controles(self.tela, self.largura, self.altura)
+
+        desenhar_hud(
+            self.tela,
+            self.largura,
+            estado.numero_fase,
+            self.fonte_cronometro,
+            self.fonte_fase,
+            self.fonte_lupas,
+            estado.tempo_inicio,
+            estado.lupas,
+        )
         pygame.display.flip()
-        clock.tick(FPS)
 
-    return False
+    def executar(self):
+        while True:
+            acao = self._ler_eventos()
+            if acao is AcaoQuadro.SAIR:
+                return False
+            if acao is AcaoQuadro.REINICIAR:
+                self.estado.reiniciar()
+                continue
+
+            acao = self._atualizar()
+            if acao is AcaoQuadro.REINICIAR:
+                self.estado.reiniciar()
+                continue
+            if acao is AcaoQuadro.MUDOU_FASE:
+                continue
+            if acao is AcaoQuadro.SAIR:
+                return False
+            if acao is AcaoQuadro.FINALIZAR:
+                return self.jogar_novamente
+
+            self._desenhar()
+            self.clock.tick(FPS)
+
+
+def jogo(tela=None, clock=None):
+    """Executa uma partida; aceita tela/relógio para facilitar testes."""
+    if not pygame.get_init():
+        pygame.init()
+    if tela is None:
+        tela, _, _ = criar_tela()
+    return Jogo(tela, clock).executar()
 
 
 def main():
-    """Alterna entre o menu e novas partidas até o jogador sair."""
-
+    """Inicializa o Pygame uma vez e alterna menu e partida."""
     pygame.init()
+    tela, _, _ = criar_tela()
+    clock = pygame.time.Clock()
 
-    while tela_inicial():
+    while tela_inicial(tela, clock):
         iniciar_musica()
-
-        # True significa que JOGAR NOVAMENTE foi escolhido na tela final.
-        # Nesse caso, o laço volta ao menu antes de iniciar outra partida.
-        jogar_novamente = jogo()
+        jogar_novamente = jogo(tela, clock)
         parar_musica()
-
         if not jogar_novamente:
             break
 

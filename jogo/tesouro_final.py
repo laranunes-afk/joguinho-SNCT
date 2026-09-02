@@ -4,15 +4,34 @@ from recursos import renderizar_texto_contornado
 
 
 class TesouroFinal:
-    """Passagem secreta encontrada ao sair pelo lado esquerdo da fase."""
+    """Controla a passagem secreta encontrada à esquerda da fase."""
 
     DURACAO_CAMINHADA = 2000
+    DURACAO_AVISO = 2500
     RECOMPENSA = 20
+    X_RETORNO = 40
+    Y_AVISO = 175
 
     def __init__(self):
         self.inicio_caminhada = None
         self.coletado = False
         self.aviso_ate = 0
+        self.texto_aviso = None
+
+    def _obter_texto_aviso(self):
+        """Cria o texto na primeira exibição e o reutiliza nas seguintes."""
+        if self.texto_aviso is not None:
+            return self.texto_aviso
+
+        fonte = pygame.font.Font(None, 48)
+        self.texto_aviso = renderizar_texto_contornado(
+            fonte,
+            f"TESOURO ENCONTRADO: +{self.RECOMPENSA} LUPAS",
+            (255, 215, 55),
+            espessura=2,
+            antialias=True,
+        )
+        return self.texto_aviso
 
     @property
     def em_andamento(self):
@@ -23,21 +42,15 @@ class TesouroFinal:
             self.inicio_caminhada = agora
 
     def atualizar(self, personagem, y_chao, agora):
-        """Mantem a caminhada secreta e retorna as lupas conquistadas."""
-        personagem.rect.x -= personagem.velocidade
-        personagem.em_movimento = True
-        personagem.virado_para_esquerda = True
-        personagem.atualizar_animacao()
+        """Mantém a caminhada secreta e retorna a recompensa ao concluí-la."""
+        personagem.caminhar_automaticamente(-1)
         if agora - self.inicio_caminhada < self.DURACAO_CAMINHADA:
             return 0
 
         self.coletado = True
         self.inicio_caminhada = None
-        self.aviso_ate = agora + 2500
-        personagem.rect.left = 40 + personagem.margem_hitbox_x
-        personagem.rect.bottom = y_chao
-        personagem.velocidade_y = 0
-        personagem.no_chao = True
+        self.aviso_ate = agora + self.DURACAO_AVISO
+        personagem.posicionar_no_chao(self.X_RETORNO, y_chao)
         return self.RECOMPENSA
 
     def limitar_saida_usada(self, personagem):
@@ -47,14 +60,8 @@ class TesouroFinal:
     def desenhar_aviso(self, tela, largura):
         if pygame.time.get_ticks() >= self.aviso_ate:
             return
-        fonte = pygame.font.Font(None, 48)
-        mensagem = f"TESOURO ENCONTRADO: +{self.RECOMPENSA} LUPAS"
-        texto = renderizar_texto_contornado(
-            fonte,
-            mensagem,
-            (255, 215, 55),
-            espessura=2,
-            antialias=True,
+        texto = self._obter_texto_aviso()
+        rect = texto.get_rect(
+            center=(largura // 2, self.Y_AVISO),
         )
-        rect = texto.get_rect(center=(largura // 2, 175))
         tela.blit(texto, rect)

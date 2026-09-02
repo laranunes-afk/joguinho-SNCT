@@ -1,127 +1,301 @@
+from dataclasses import dataclass
+
 import pygame
 
+from configuracoes_tela import FPS
 from ranking import Ranking
+
+
+@dataclass(frozen=True)
+class _FontesTelaFinal:
+    titulo: pygame.font.Font
+    resumo: pygame.font.Font
+    pequena: pygame.font.Font
+
+
+@dataclass(frozen=True)
+class _LayoutTelaFinal:
+    campo_nome: pygame.Rect
+    botao_novamente: pygame.Rect
+    botao_sair: pygame.Rect
+
+
+@dataclass
+class _EstadoTelaFinal:
+    ranking: list[dict]
+    nome: str = ""
+    salvo: bool = False
+    mensagem: str = "Digite seu nome e pressione Enter para salvar no ranking."
 
 
 class TelaFinal:
     """Exibe o resultado da partida e mantém o ranking local dos jogadores."""
 
-    def mostrar(self, tela, segundos_decorridos, lupas_coletadas):
-        """Retorna True para iniciar outra partida e False para sair."""
-        largura, altura = tela.get_size()
-        fonte_titulo = pygame.font.Font(None, 68)
-        fonte_resumo = pygame.font.Font(None, 38)
-        fonte_ranking = pygame.font.Font(None, 26)
-        fonte_pequena = pygame.font.Font(None, 26)
-        clock = pygame.time.Clock()
+    LIMITE_NOME = 16
 
-        repositorio = Ranking()
-        ranking = repositorio.carregar()
-        nome = ""
-        salvo = False
-        mensagem = "Digite seu nome e pressione Enter para salvar no ranking."
+    @staticmethod
+    def _criar_fontes():
+        return _FontesTelaFinal(
+            titulo=pygame.font.Font(None, 68),
+            resumo=pygame.font.Font(None, 38),
+            pequena=pygame.font.Font(None, 26),
+        )
 
-        campo_nome = pygame.Rect(largura // 2 - 220, 180, 440, 50)
-        botao_novamente = pygame.Rect(largura // 2 - 240, altura - 85, 220, 55)
-        botao_sair = pygame.Rect(largura // 2 + 20, altura - 85, 220, 55)
+    @staticmethod
+    def _criar_layout(largura, altura):
+        return _LayoutTelaFinal(
+            campo_nome=pygame.Rect(largura // 2 - 220, 180, 440, 50),
+            botao_novamente=pygame.Rect(
+                largura // 2 - 240,
+                altura - 85,
+                220,
+                55,
+            ),
+            botao_sair=pygame.Rect(
+                largura // 2 + 20,
+                altura - 85,
+                220,
+                55,
+            ),
+        )
 
-        def registrar_resultado():
-            """Adiciona o resultado atual uma única vez ao ranking."""
-            nonlocal ranking, salvo, mensagem
+    @staticmethod
+    def _formatar_tempo(total_segundos):
+        minutos, segundos = divmod(total_segundos, 60)
+        return f"{minutos:02d}:{segundos:02d}"
 
-            if salvo:
-                return
+    @staticmethod
+    def _registrar_resultado(
+        estado,
+        repositorio,
+        segundos_decorridos,
+        lupas_coletadas,
+    ):
+        """Registra o resultado no máximo uma vez e informa eventuais falhas."""
+        if estado.salvo:
+            return
 
-            ranking = repositorio.salvar_resultado(
-                ranking,
-                nome,
+        try:
+            estado.ranking = repositorio.salvar_resultado(
+                estado.ranking,
+                estado.nome,
                 segundos_decorridos,
                 lupas_coletadas,
             )
-            salvo = True
-            mensagem = "Resultado salvo no Top 10!"
+        except (OSError, TypeError, ValueError):
+            estado.mensagem = "Não foi possível salvar o ranking."
+            return
 
-        while True:
-            pos_mouse = pygame.mouse.get_pos()
+        estado.salvo = True
+        if repositorio.ultimo_resultado_entrou_no_top_10:
+            estado.mensagem = "Resultado salvo no Top 10!"
+        else:
+            estado.mensagem = "Resultado não entrou no Top 10."
 
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    return False
+    def _tratar_evento(
+        self,
+        evento,
+        estado,
+        layout,
+        repositorio,
+        segundos_decorridos,
+        lupas_coletadas,
+    ):
+        """Retorna True/False ao encerrar a tela e None para continuar."""
+        if evento.type == pygame.QUIT:
+            return False
 
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_ESCAPE:
-                        return False
-                    if evento.key == pygame.K_RETURN:
-                        registrar_resultado()
-                    elif evento.key == pygame.K_BACKSPACE and not salvo:
-                        nome = nome[:-1]
-                    elif not salvo and evento.unicode.isprintable() and len(nome) < 16:
-                        nome += evento.unicode
+        if evento.type == pygame.KEYDOWN:
+            if evento.key == pygame.K_ESCAPE:
+                return False
+            if evento.key == pygame.K_RETURN:
+                self._registrar_resultado(
+                    estado,
+                    repositorio,
+                    segundos_decorridos,
+                    lupas_coletadas,
+                )
+            elif evento.key == pygame.K_BACKSPACE and not estado.salvo:
+                estado.nome = estado.nome[:-1]
+            elif (
+                not estado.salvo
+                and evento.unicode.isprintable()
+                and len(estado.nome) < self.LIMITE_NOME
+            ):
+                estado.nome += evento.unicode
 
-                if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-                    if botao_novamente.collidepoint(evento.pos):
-                        registrar_resultado()
-                        return True
-                    if botao_sair.collidepoint(evento.pos):
-                        registrar_resultado()
-                        return False
+        clicou = evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1
+        if clicou and layout.botao_novamente.collidepoint(evento.pos):
+            self._registrar_resultado(
+                estado,
+                repositorio,
+                segundos_decorridos,
+                lupas_coletadas,
+            )
+            return True
+        if clicou and layout.botao_sair.collidepoint(evento.pos):
+            self._registrar_resultado(
+                estado,
+                repositorio,
+                segundos_decorridos,
+                lupas_coletadas,
+            )
+            return False
+        return None
 
-            tela.fill((18, 35, 45))
+    def _desenhar_resumo(
+        self,
+        tela,
+        largura,
+        fontes,
+        repositorio,
+        estado,
+        segundos_decorridos,
+        lupas_coletadas,
+    ):
+        titulo = fontes.titulo.render(
+            "VOCÊ COMPLETOU O JOGO!",
+            True,
+            (80, 220, 120),
+        )
+        tela.blit(titulo, titulo.get_rect(center=(largura // 2, 55)))
 
-            titulo = fonte_titulo.render("VOCÊ COMPLETOU O JOGO!", True, (80, 220, 120))
-            tela.blit(titulo, titulo.get_rect(center=(largura // 2, 55)))
+        resumo = fontes.resumo.render(
+            (
+                f"Lupas: {lupas_coletadas}   |   "
+                f"Tempo: {self._formatar_tempo(segundos_decorridos)}   |   "
+                f"Pontos: {repositorio.calcular_pontos(lupas_coletadas, segundos_decorridos)}"
+            ),
+            True,
+            (255, 255, 255),
+        )
+        tela.blit(resumo, resumo.get_rect(center=(largura // 2, 120)))
 
-            minutos = segundos_decorridos // 60
-            segundos = segundos_decorridos % 60
-            resumo = fonte_resumo.render(
+        instrucao = fontes.pequena.render(
+            estado.mensagem,
+            True,
+            (205, 215, 225),
+        )
+        tela.blit(instrucao, instrucao.get_rect(center=(largura // 2, 150)))
+
+    @staticmethod
+    def _desenhar_campo_nome(tela, fontes, layout, estado):
+        campo_nome = layout.campo_nome
+        pygame.draw.rect(tela, (45, 75, 100), campo_nome, border_radius=10)
+        pygame.draw.rect(
+            tela,
+            (120, 180, 220),
+            campo_nome,
+            2,
+            border_radius=10,
+        )
+        texto_nome = fontes.resumo.render(
+            estado.nome if estado.nome else "Seu nome",
+            True,
+            (255, 255, 255) if estado.nome else (170, 185, 200),
+        )
+        tela.blit(
+            texto_nome,
+            texto_nome.get_rect(
+                midleft=(campo_nome.left + 15, campo_nome.centery),
+            ),
+        )
+
+    def _desenhar_ranking(self, tela, largura, fontes, ranking):
+        titulo = fontes.resumo.render("TOP 10", True, (255, 215, 55))
+        tela.blit(titulo, titulo.get_rect(center=(largura // 2, 265)))
+
+        inicio_y = 295
+        for posicao, item in enumerate(ranking[: Ranking.LIMITE], start=1):
+            linha = fontes.pequena.render(
                 (
-                    f"Lupas: {lupas_coletadas}   |   "
-                    f"Tempo: {minutos:02d}:{segundos:02d}   |   "
-                    f"Pontos: {repositorio.calcular_pontos(lupas_coletadas, segundos_decorridos)}"
+                    f"{posicao:>2}. {item['nome']:<16}  "
+                    f"{item['pontos']} pts  |  {item['lupas']} lupas  |  "
+                    f"{self._formatar_tempo(item['tempo'])}"
                 ),
                 True,
-                (255, 255, 255)
+                (240, 245, 250),
             )
-            tela.blit(resumo, resumo.get_rect(center=(largura // 2, 120)))
-
-            instrucao = fonte_pequena.render(mensagem, True, (205, 215, 225))
-            tela.blit(instrucao, instrucao.get_rect(center=(largura // 2, 150)))
-
-            pygame.draw.rect(tela, (45, 75, 100), campo_nome, border_radius=10)
-            pygame.draw.rect(tela, (120, 180, 220), campo_nome, 2, border_radius=10)
-            texto_nome = fonte_resumo.render(
-                nome if nome else "Seu nome",
-                True,
-                (255, 255, 255) if nome else (170, 185, 200)
+            tela.blit(
+                linha,
+                linha.get_rect(
+                    center=(largura // 2, inicio_y + (posicao - 1) * 22),
+                ),
             )
-            tela.blit(texto_nome, texto_nome.get_rect(midleft=(campo_nome.left + 15, campo_nome.centery)))
 
-            titulo_ranking = fonte_resumo.render("TOP 10", True, (255, 215, 55))
-            tela.blit(titulo_ranking, titulo_ranking.get_rect(center=(largura // 2, 265)))
+    @staticmethod
+    def _desenhar_botoes(tela, fontes, layout, pos_mouse):
+        for botao, texto in (
+            (layout.botao_novamente, "JOGAR NOVAMENTE"),
+            (layout.botao_sair, "SAIR"),
+        ):
+            cor = (
+                (90, 155, 205)
+                if botao.collidepoint(pos_mouse)
+                else (55, 110, 160)
+            )
+            pygame.draw.rect(tela, cor, botao, border_radius=12)
+            rotulo = fontes.pequena.render(texto, True, (255, 255, 255))
+            tela.blit(rotulo, rotulo.get_rect(center=botao.center))
 
-            inicio_y = 295
-            for posicao, item in enumerate(ranking, start=1):
-                minutos_item = item["tempo"] // 60
-                segundos_item = item["tempo"] % 60
-                linha = fonte_ranking.render(
-                    (
-                        f"{posicao:>2}. {item['nome']:<16}  "
-                        f"{item['pontos']} pts  |  {item['lupas']} lupas  |  "
-                        f"{minutos_item:02d}:{segundos_item:02d}"
-                    ),
-                    True,
-                    (240, 245, 250)
+    def _desenhar(
+        self,
+        tela,
+        largura,
+        fontes,
+        layout,
+        repositorio,
+        estado,
+        segundos_decorridos,
+        lupas_coletadas,
+        pos_mouse,
+    ):
+        tela.fill((18, 35, 45))
+        self._desenhar_resumo(
+            tela,
+            largura,
+            fontes,
+            repositorio,
+            estado,
+            segundos_decorridos,
+            lupas_coletadas,
+        )
+        self._desenhar_campo_nome(tela, fontes, layout, estado)
+        self._desenhar_ranking(tela, largura, fontes, estado.ranking)
+        self._desenhar_botoes(tela, fontes, layout, pos_mouse)
+
+    def mostrar(self, tela, segundos_decorridos, lupas_coletadas):
+        """Retorna True para iniciar outra partida e False para sair."""
+        largura, altura = tela.get_size()
+        fontes = self._criar_fontes()
+        layout = self._criar_layout(largura, altura)
+        repositorio = Ranking()
+        estado = _EstadoTelaFinal(ranking=repositorio.carregar())
+        clock = pygame.time.Clock()
+
+        while True:
+            for evento in pygame.event.get():
+                resultado = self._tratar_evento(
+                    evento,
+                    estado,
+                    layout,
+                    repositorio,
+                    segundos_decorridos,
+                    lupas_coletadas,
                 )
-                tela.blit(linha, linha.get_rect(center=(largura // 2, inicio_y + (posicao - 1) * 22)))
+                if resultado is not None:
+                    return resultado
 
-            for botao, texto in (
-                (botao_novamente, "JOGAR NOVAMENTE"),
-                (botao_sair, "SAIR"),
-            ):
-                cor = (90, 155, 205) if botao.collidepoint(pos_mouse) else (55, 110, 160)
-                pygame.draw.rect(tela, cor, botao, border_radius=12)
-                rotulo = fonte_pequena.render(texto, True, (255, 255, 255))
-                tela.blit(rotulo, rotulo.get_rect(center=botao.center))
-
+            self._desenhar(
+                tela,
+                largura,
+                fontes,
+                layout,
+                repositorio,
+                estado,
+                segundos_decorridos,
+                lupas_coletadas,
+                pygame.mouse.get_pos(),
+            )
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(FPS)
