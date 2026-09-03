@@ -62,14 +62,33 @@ class TelaMultiplaEscolha:
         largura_disponivel = max(1, largura - self.tema.margem_horizontal * 2)
         largura_botao = min(self.tema.largura_maxima_botao, largura_disponivel)
         inicio_y = max(self.tema.inicio_botoes_minimo, altura // 3)
-        passo_vertical = self.tema.altura_botao + self.tema.espacamento_botoes
+        margem_inferior = max(self.tema.margem_rodape + 32, 64)
+        espaco_disponivel = max(quantidade, altura - margem_inferior - inicio_y)
+        espacamento = self.tema.espacamento_botoes
+        altura_botao = self.tema.altura_botao
+
+        altura_ideal = (
+            quantidade * altura_botao
+            + max(0, quantidade - 1) * espacamento
+        )
+        if altura_ideal > espaco_disponivel:
+            espacamento = min(espacamento, 8)
+            altura_botao = max(
+                28,
+                (
+                    espaco_disponivel
+                    - max(0, quantidade - 1) * espacamento
+                ) // quantidade,
+            )
+
+        passo_vertical = altura_botao + espacamento
 
         return [
             pygame.Rect(
                 (largura - largura_botao) // 2,
                 inicio_y + indice * passo_vertical,
                 largura_botao,
-                self.tema.altura_botao,
+                altura_botao,
             )
             for indice in range(quantidade)
         ]

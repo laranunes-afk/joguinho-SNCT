@@ -46,7 +46,7 @@ class PessoaFinal:
                 / recortada.get_height()
             ),
         )
-        return pygame.transform.scale(
+        return pygame.transform.smoothscale(
             recortada,
             (largura, self.altura_imagem),
         )

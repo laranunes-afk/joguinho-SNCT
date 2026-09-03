@@ -71,13 +71,13 @@ DESAFIOS_FINAIS = (
     DesafioFinal(
         (65, 145, 210),
         "personagem-1-mesma-escala.png",
-        90,
+        118,
         ("Quanto e 12 multiplicado por 8?", ["86", "92", "96", "108"], 2),
     ),
     DesafioFinal(
         (220, 115, 70),
         "personagem-2-mesma-escala.png",
-        90,
+        118,
         (
             "Qual planeta e conhecido como Planeta Vermelho?",
             ["Venus", "Marte", "Jupiter", "Saturno"],
@@ -87,7 +87,7 @@ DESAFIOS_FINAIS = (
     DesafioFinal(
         (105, 180, 105),
         "ELIAS.png",
-        100,
+        130,
         (
             "Qual linguagem e usada para estruturar paginas da internet?",
             ["HTML", "Python", "SQL", "C++"],

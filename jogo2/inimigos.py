@@ -3,7 +3,7 @@ import random
 import pygame
 
 from cenario import esta_visivel, manter_objetos_proximos
-from recursos import carregar_imagem_recortada
+from recursos import carregar_imagem
 
 
 LARGURA_INIMIGO = 46
@@ -24,19 +24,18 @@ MARGEM_PEDRA = (120, 0)
 MARGEM_VISIBILIDADE = 100
 TOLERANCIA_PISADA = 12
 INTENSIDADE_REBOTE = 0.55
-ALTURA_IMAGEM_INIMIGO = 78
-ARQUIVOS_INIMIGOS = (
-    "Homem Vilão6.png",
-    "mulher vilão.png",
-)
+ARQUIVOS_INIMIGO = ("Homem Vilão6.png", "mulher vilão.png")
+ALTURA_ARTE_INIMIGO = 92
+LIMIAR_ALPHA = 8
+DISTANCIA_FUNDO_ESCURO = 0.03
 
 
 class Inimigo:
     """Inimigo que patrulha uma pequena área do cenário."""
 
-    _imagens = {}
+    _imagens = None
 
-    def __init__(self, x, y_chao, nome_imagem=ARQUIVOS_INIMIGOS[0]):
+    def __init__(self, x, y_chao):
         """Cria um inimigo e define os limites de sua patrulha."""
         self.rect = pygame.Rect(
             x,
@@ -48,26 +47,49 @@ class Inimigo:
         self.limite_direito = x + ALCANCE_PATRULHA
         self.velocidade = VELOCIDADE_PATRULHA
         self.derrotado = False
-        self.imagem = self._obter_imagem(nome_imagem)
+        # Cada vilão mantém, durante toda a vida, o sprite sorteado ao nascer.
+        self.indice_imagem = random.choice(range(len(ARQUIVOS_INIMIGO)))
 
     @classmethod
-    def _obter_imagem(cls, nome_imagem):
-        """Carrega e dimensiona cada arte de inimigo uma única vez."""
-        if nome_imagem not in cls._imagens:
-            imagem = carregar_imagem_recortada(nome_imagem)
-            largura = max(
-                1,
-                round(
-                    imagem.get_width()
-                    * ALTURA_IMAGEM_INIMIGO
-                    / imagem.get_height()
-                ),
+    def _preparar_imagem(cls, nome_arquivo):
+        """Recorta o fundo e reduz a arte original com filtragem de qualidade."""
+        imagem = carregar_imagem(nome_arquivo)
+        if imagem.get_masks()[3] == 0:
+            imagem = imagem.convert_alpha()
+            pixels = pygame.PixelArray(imagem)
+            pixels.replace(
+                (0, 0, 0, 255),
+                (0, 0, 0, 0),
+                distance=DISTANCIA_FUNDO_ESCURO,
             )
-            cls._imagens[nome_imagem] = pygame.transform.scale(
-                imagem,
-                (largura, ALTURA_IMAGEM_INIMIGO),
+            del pixels
+
+        area_visivel = imagem.get_bounding_rect(min_alpha=LIMIAR_ALPHA)
+        if area_visivel.width and area_visivel.height:
+            imagem = imagem.subsurface(area_visivel).copy()
+
+        largura = max(
+            1,
+            round(
+                imagem.get_width()
+                * ALTURA_ARTE_INIMIGO
+                / imagem.get_height()
+            ),
+        )
+        return pygame.transform.smoothscale(
+            imagem,
+            (largura, ALTURA_ARTE_INIMIGO),
+        )
+
+    @classmethod
+    def _obter_imagens(cls):
+        """Carrega os dois quadros somente na primeira utilização."""
+        if cls._imagens is None:
+            cls._imagens = tuple(
+                cls._preparar_imagem(nome)
+                for nome in ARQUIVOS_INIMIGO
             )
-        return cls._imagens[nome_imagem]
+        return cls._imagens
 
     def _esta_perto_de_buraco(self, buracos):
         return any(
@@ -117,13 +139,14 @@ class Inimigo:
         if self.derrotado:
             return
 
-        inimigo_na_tela = self.rect.copy()
-        inimigo_na_tela.x -= int(camera_x)
-
-        imagem = self.imagem
-        if self.velocidade < 0:
-            imagem = pygame.transform.flip(imagem, True, False)
-        tela.blit(imagem, imagem.get_rect(midbottom=inimigo_na_tela.midbottom))
+        imagem = self._obter_imagens()[self.indice_imagem]
+        destino = imagem.get_rect(
+            midbottom=(
+                self.rect.centerx - int(camera_x),
+                self.rect.bottom,
+            )
+        )
+        tela.blit(imagem, destino)
 
 
 class Inimigos:
@@ -183,14 +206,7 @@ class Inimigos:
     def _gerar_ate(self, limite_geracao, pedras, buracos):
         """Gera inimigos em posições seguras até o limite indicado."""
         while self.proxima_posicao < limite_geracao:
-            nome_imagem = ARQUIVOS_INIMIGOS[
-                len(self.inimigos) % len(ARQUIVOS_INIMIGOS)
-            ]
-            inimigo = Inimigo(
-                self.proxima_posicao,
-                self.y_chao,
-                nome_imagem,
-            )
+            inimigo = Inimigo(self.proxima_posicao, self.y_chao)
             if self._esta_em_posicao_segura(inimigo, pedras, buracos):
                 self.inimigos.append(inimigo)
             self.proxima_posicao += random.randint(*self._intervalo_geracao)
