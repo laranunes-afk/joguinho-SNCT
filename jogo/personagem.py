@@ -14,7 +14,7 @@ TOTAL_POSES = TOTAL_QUADROS_CORRIDA + 1
 # Quantidade de quadros da animação de pulo.
 TOTAL_QUADROS_PULO = 7
 # Tempo mínimo, em milissegundos, entre dois quadros da corrida.
-INTERVALO_ANIMACAO_MS = 40
+INTERVALO_ANIMACAO_MS = 100
 # Componentes menores que este tamanho são ignorados ao localizar sprites.
 TAMANHO_MINIMO_COMPONENTE = 100
 # Tolerância usada para identificar pixels quase brancos do fundo.
@@ -317,6 +317,10 @@ class Personagem:
         if self.em_movimento:
             # Atualiza a orientação apenas quando existe movimento.
             self.virado_para_esquerda = direcao < 0
+        else:
+            # Ao soltar as teclas, reinicia a corrida para mostrar a pose parada.
+            self.indice_quadro = 0
+            self.ultimo_quadro = pygame.time.get_ticks()
 
     def pular(self):
         """Inicia o pulo somente quando a personagem está apoiada."""
