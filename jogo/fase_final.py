@@ -63,8 +63,7 @@ class FaseFinal:
             for indice, desafio in enumerate(DESAFIOS_FINAIS)
         ]
 
-    @staticmethod
-    def _processar_eventos():
+    def _processar_eventos(self):
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 return "sair"
@@ -78,7 +77,7 @@ class FaseFinal:
     def _atualizar_personagem(self, lupas):
         """Atualiza o controle normal ou a caminhada secreta do tesouro."""
         agora = pygame.time.get_ticks()
-        if self.tesouro.em_andamento:
+        if self.tesouro.em_andamento():
             recompensa = self.tesouro.atualizar(
                 self.personagem,
                 self.y_chao,
@@ -162,7 +161,7 @@ class FaseFinal:
                 self.personagem.rect.right,
             )
 
-            if not self.tesouro.em_andamento:
+            if not self.tesouro.em_andamento():
                 self._bloquear_apresentadores(rect_anterior)
                 resultado, lupas = self._verificar_perguntas(tela, lupas)
                 if resultado is not None:

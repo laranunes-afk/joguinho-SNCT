@@ -51,8 +51,7 @@ class PessoaFinal:
             (largura, self.altura_imagem),
         )
 
-    @staticmethod
-    def _criar_indicador():
+    def _criar_indicador(self):
         tamanho = RAIO_INDICADOR * 2
         indicador = pygame.Surface((tamanho, tamanho), pygame.SRCALPHA)
         centro = (RAIO_INDICADOR, RAIO_INDICADOR)

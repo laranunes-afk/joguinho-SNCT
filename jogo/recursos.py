@@ -1,11 +1,11 @@
-from functools import lru_cache
-from pathlib import Path
-
 import pygame
 
 
-RAIZ_PROJETO = Path(__file__).resolve().parent.parent
-PASTA_IMAGENS = RAIZ_PROJETO / "Imagens"
+RAIZ_PROJETO = __file__.replace("\\", "/").rsplit("/", 2)[0]
+PASTA_IMAGENS = RAIZ_PROJETO + "/Imagens"
+LIMITE_CACHE = 128
+_CACHE_IMAGENS = {}
+_CACHE_RECORTE = {}
 
 
 def _normalizar_tamanho(tamanho):
@@ -15,10 +15,13 @@ def _normalizar_tamanho(tamanho):
     return tuple(map(int, tamanho))
 
 
-@lru_cache(maxsize=128)
 def _carregar_imagem_em_cache(nome, tamanho, fundo_transparente):
     """Carrega e prepara a superfície mestre compartilhada apenas internamente."""
-    imagem_original = pygame.image.load(str(PASTA_IMAGENS / nome))
+    chave = (nome, tamanho, fundo_transparente)
+    if chave in _CACHE_IMAGENS:
+        return _CACHE_IMAGENS[chave]
+
+    imagem_original = pygame.image.load(PASTA_IMAGENS + "/" + nome)
     tem_transparencia = imagem_original.get_masks()[3] != 0
     imagem = (
         imagem_original.convert_alpha()
@@ -33,6 +36,10 @@ def _carregar_imagem_em_cache(nome, tamanho, fundo_transparente):
     if tamanho is not None:
         imagem = pygame.transform.scale(imagem, tamanho)
 
+    if len(_CACHE_IMAGENS) >= LIMITE_CACHE:
+        primeira_chave = next(iter(_CACHE_IMAGENS))
+        del _CACHE_IMAGENS[primeira_chave]
+    _CACHE_IMAGENS[chave] = imagem
     return imagem
 
 
@@ -48,9 +55,12 @@ def carregar_imagem(nome, tamanho=None, fundo_transparente=False):
     return imagem.copy()
 
 
-@lru_cache(maxsize=128)
 def _carregar_imagem_recortada_em_cache(nome, tamanho):
     """Mantém em cache o recorte pronto, inclusive suas transformações."""
+    chave = (nome, tamanho)
+    if chave in _CACHE_RECORTE:
+        return _CACHE_RECORTE[chave]
+
     imagem = _carregar_imagem_em_cache(nome, None, True)
     # O limite 128 equivale ao limiar padrão usado pela máscara anterior.
     area_visivel = imagem.get_bounding_rect(128)
@@ -61,6 +71,11 @@ def _carregar_imagem_recortada_em_cache(nome, tamanho):
 
     if tamanho is not None:
         imagem = pygame.transform.scale(imagem, tamanho)
+
+    if len(_CACHE_RECORTE) >= LIMITE_CACHE:
+        primeira_chave = next(iter(_CACHE_RECORTE))
+        del _CACHE_RECORTE[primeira_chave]
+    _CACHE_RECORTE[chave] = imagem
     return imagem
 
 

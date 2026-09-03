@@ -1,9 +1,5 @@
-import json
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-
-
-ARQUIVO_RANKING = Path(__file__).with_name("ranking.json")
+PASTA_JOGO = __file__.replace("\\", "/").rsplit("/", 1)[0]
+ARQUIVO_RANKING = PASTA_JOGO + "/ranking.json"
 
 
 class Ranking:
@@ -16,7 +12,7 @@ class Ranking:
     TAMANHO_MAXIMO_NOME = 16
 
     def __init__(self, arquivo=ARQUIVO_RANKING):
-        self.arquivo = Path(arquivo)
+        self.arquivo = str(arquivo)
         self.ultimo_resultado_entrou_no_top_10 = False
 
     @classmethod
@@ -71,12 +67,38 @@ class Ranking:
 
     def carregar(self):
         try:
-            with self.arquivo.open(encoding="utf-8") as arquivo:
-                itens = json.load(arquivo)
-        except (OSError, UnicodeError, json.JSONDecodeError):
+            with open(self.arquivo, encoding="utf-8") as arquivo:
+                linhas = arquivo.readlines()
+        except (OSError, UnicodeError):
             return []
 
-        if not isinstance(itens, list):
+        itens = []
+        item = None
+        try:
+            for linha in linhas:
+                linha = linha.strip().rstrip(",")
+                if linha == "{":
+                    item = {}
+                    continue
+                if linha == "}":
+                    if item is not None:
+                        itens.append(item)
+                    item = None
+                    continue
+                if item is None or ":" not in linha:
+                    continue
+
+                chave, valor = linha.split(":", 1)
+                chave = chave.strip().strip('"')
+                valor = valor.strip()
+                if chave == "nome" and valor.startswith('"') and valor.endswith('"'):
+                    item[chave] = valor[1:-1].replace('\\"', '"').replace(
+                        "\\\\",
+                        "\\",
+                    )
+                elif chave in {"tempo", "lupas", "pontos"}:
+                    item[chave] = int(valor)
+        except (TypeError, ValueError):
             return []
 
         validos = []
@@ -86,28 +108,24 @@ class Ranking:
                 validos.append(normalizado)
         return sorted(validos, key=self._chave)[:self.LIMITE]
 
-    def _gravar_atomicamente(self, itens):
-        """Substitui o ranking somente depois que o novo JSON está completo."""
-        self.arquivo.parent.mkdir(parents=True, exist_ok=True)
-        caminho_temporario = None
-        try:
-            with NamedTemporaryFile(
-                "w",
-                encoding="utf-8",
-                dir=self.arquivo.parent,
-                prefix=f".{self.arquivo.name}.",
-                suffix=".tmp",
-                delete=False,
-            ) as arquivo:
-                caminho_temporario = Path(arquivo.name)
-                json.dump(itens, arquivo, ensure_ascii=False, indent=2)
-            caminho_temporario.replace(self.arquivo)
-        finally:
-            if caminho_temporario is not None and caminho_temporario.exists():
-                try:
-                    caminho_temporario.unlink()
-                except OSError:
-                    pass
+    def _gravar(self, itens):
+        """Grava o ranking em JSON usando apenas recursos nativos da linguagem."""
+        linhas = ["["]
+        for indice, item in enumerate(itens):
+            nome = item["nome"].replace("\\", "\\\\").replace('"', '\\"')
+            linhas.extend(
+                (
+                    "  {",
+                    f'    "nome": "{nome}",',
+                    f'    "tempo": {item["tempo"]},',
+                    f'    "lupas": {item["lupas"]},',
+                    f'    "pontos": {item["pontos"]}',
+                    "  }," if indice < len(itens) - 1 else "  }",
+                )
+            )
+        linhas.append("]")
+        with open(self.arquivo, "w", encoding="utf-8") as arquivo:
+            arquivo.write("\n".join(linhas) + "\n")
 
     def salvar_resultado(self, itens, nome, tempo, lupas):
         if not isinstance(itens, (list, tuple)):
@@ -134,5 +152,5 @@ class Ranking:
         self.ultimo_resultado_entrou_no_top_10 = any(
             item is novo_resultado for item in melhores
         )
-        self._gravar_atomicamente(melhores)
+        self._gravar(melhores)
         return melhores

@@ -1,5 +1,3 @@
-from dataclasses import dataclass, field
-
 import pygame
 
 from avisos import AvisosTemporarios
@@ -8,21 +6,19 @@ from fabrica_fase import criar_fase
 from perguntas import Perguntas
 
 
-@dataclass
 class EstadoPartida:
     """Agrupa o estado mutável e as transições de uma partida."""
 
-    largura: int
-    altura: int
-    numero_fase: int = 1
-    lupas: int = 0
-    tempo_inicio: int | None = None
-    mostrar_controles: bool = True
-    perguntas: Perguntas = field(default_factory=Perguntas)
-    avisos: AvisosTemporarios = field(default_factory=AvisosTemporarios)
-
-    def __post_init__(self):
-        self._carregar_fase(self.numero_fase)
+    def __init__(self, largura, altura, numero_fase=1):
+        self.largura = largura
+        self.altura = altura
+        self.numero_fase = numero_fase
+        self.lupas = 0
+        self.tempo_inicio = None
+        self.mostrar_controles = True
+        self.perguntas = Perguntas()
+        self.avisos = AvisosTemporarios()
+        self._carregar_fase(numero_fase)
 
     def _carregar_fase(self, numero_fase):
         self.numero_fase = numero_fase
@@ -63,7 +59,6 @@ class EstadoPartida:
         if self.tempo_inicio is None:
             self.tempo_inicio = pygame.time.get_ticks()
 
-    @property
     def segundos_decorridos(self):
         if self.tempo_inicio is None:
             return 0

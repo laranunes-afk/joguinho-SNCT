@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-
-
 TIPOS_DE_PERGUNTA = {
     1: "CONHECIMENTOS GERAIS",
     2: "MATEMÁTICA",
@@ -57,14 +54,14 @@ PERGUNTAS_POR_FASE = {
 }
 
 
-@dataclass(frozen=True)
 class DesafioFinal:
     """Une um apresentador à sua pergunta, evitando listas paralelas."""
 
-    cor: tuple
-    imagem: str
-    altura_imagem: int
-    pergunta: tuple
+    def __init__(self, cor, imagem, altura_imagem, pergunta):
+        self.cor = cor
+        self.imagem = imagem
+        self.altura_imagem = altura_imagem
+        self.pergunta = pergunta
 
 
 DESAFIOS_FINAIS = (

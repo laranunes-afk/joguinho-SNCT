@@ -1,31 +1,31 @@
-from dataclasses import dataclass
-
 import pygame
 
 from configuracoes_tela import FPS
 from ranking import Ranking
 
 
-@dataclass(frozen=True)
 class _FontesTelaFinal:
-    titulo: pygame.font.Font
-    resumo: pygame.font.Font
-    pequena: pygame.font.Font
+    def __init__(self, titulo, resumo, pequena):
+        self.titulo = titulo
+        self.resumo = resumo
+        self.pequena = pequena
 
 
-@dataclass(frozen=True)
 class _LayoutTelaFinal:
-    campo_nome: pygame.Rect
-    botao_novamente: pygame.Rect
-    botao_sair: pygame.Rect
+    def __init__(self, campo_nome, botao_novamente, botao_sair):
+        self.campo_nome = campo_nome
+        self.botao_novamente = botao_novamente
+        self.botao_sair = botao_sair
 
 
-@dataclass
 class _EstadoTelaFinal:
-    ranking: list[dict]
-    nome: str = ""
-    salvo: bool = False
-    mensagem: str = "Digite seu nome e pressione Enter para salvar no ranking."
+    def __init__(self, ranking, nome="", salvo=False, mensagem=None):
+        self.ranking = ranking
+        self.nome = nome
+        self.salvo = salvo
+        self.mensagem = mensagem or (
+            "Digite seu nome e pressione Enter para salvar no ranking."
+        )
 
 
 class TelaFinal:
@@ -33,16 +33,14 @@ class TelaFinal:
 
     LIMITE_NOME = 16
 
-    @staticmethod
-    def _criar_fontes():
+    def _criar_fontes(self):
         return _FontesTelaFinal(
             titulo=pygame.font.Font(None, 68),
             resumo=pygame.font.Font(None, 38),
             pequena=pygame.font.Font(None, 26),
         )
 
-    @staticmethod
-    def _criar_layout(largura, altura):
+    def _criar_layout(self, largura, altura):
         return _LayoutTelaFinal(
             campo_nome=pygame.Rect(largura // 2 - 220, 180, 440, 50),
             botao_novamente=pygame.Rect(
@@ -59,13 +57,12 @@ class TelaFinal:
             ),
         )
 
-    @staticmethod
-    def _formatar_tempo(total_segundos):
+    def _formatar_tempo(self, total_segundos):
         minutos, segundos = divmod(total_segundos, 60)
         return f"{minutos:02d}:{segundos:02d}"
 
-    @staticmethod
     def _registrar_resultado(
+        self,
         estado,
         repositorio,
         segundos_decorridos,
@@ -178,8 +175,7 @@ class TelaFinal:
         )
         tela.blit(instrucao, instrucao.get_rect(center=(largura // 2, 150)))
 
-    @staticmethod
-    def _desenhar_campo_nome(tela, fontes, layout, estado):
+    def _desenhar_campo_nome(self, tela, fontes, layout, estado):
         campo_nome = layout.campo_nome
         pygame.draw.rect(tela, (45, 75, 100), campo_nome, border_radius=10)
         pygame.draw.rect(
@@ -223,8 +219,7 @@ class TelaFinal:
                 ),
             )
 
-    @staticmethod
-    def _desenhar_botoes(tela, fontes, layout, pos_mouse):
+    def _desenhar_botoes(self, tela, fontes, layout, pos_mouse):
         for botao, texto in (
             (layout.botao_novamente, "JOGAR NOVAMENTE"),
             (layout.botao_sair, "SAIR"),

@@ -33,15 +33,14 @@ class Pedra:
         self.rect = pygame.Rect(x, y_chao - altura, largura, altura)
         self.imagem = self._obter_imagem(tamanho)
 
-    @classmethod
-    def _obter_imagem(cls, tamanho):
+    def _obter_imagem(self, tamanho):
         """Reaproveita pedras que tenham exatamente o mesmo tamanho."""
-        if tamanho not in cls._imagens:
-            cls._imagens[tamanho] = carregar_imagem_recortada(
+        if tamanho not in self._imagens:
+            self._imagens[tamanho] = carregar_imagem_recortada(
                 "Pedra-melhorada.png",
                 tamanho,
             )
-        return cls._imagens[tamanho]
+        return self._imagens[tamanho]
 
     def desenhar(self, tela, camera_x):
         """Desenha a pedra considerando o deslocamento da câmera."""
@@ -61,15 +60,14 @@ class Buraco:
         self.rect = pygame.Rect(x, y_chao, largura, ALTURA_AREA_BURACO)
         self.imagem = self._obter_imagem(largura)
 
-    @classmethod
-    def _obter_imagem(cls, largura):
+    def _obter_imagem(self, largura):
         """Reaproveita a arte de buracos com a mesma largura."""
-        if largura not in cls._imagens:
-            cls._imagens[largura] = carregar_imagem_recortada(
+        if largura not in self._imagens:
+            self._imagens[largura] = carregar_imagem_recortada(
                 "Buraco.png",
                 (largura, ALTURA_IMAGEM_BURACO),
             )
-        return cls._imagens[largura]
+        return self._imagens[largura]
 
     def desenhar(self, tela, camera_x):
         """Desenha a abertura do buraco na posição visível."""

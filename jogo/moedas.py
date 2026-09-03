@@ -54,8 +54,7 @@ class Moedas:
         self.moedas = []
         self.proxima_posicao = random.randint(*POSICAO_INICIAL)
 
-    @staticmethod
-    def _esta_sobre_buraco(moeda, buracos):
+    def _esta_sobre_buraco(self, moeda, buracos):
         """Informa se a lupa alcança a abertura de algum buraco."""
         area_moeda = moeda.rect.inflate(*MARGEM_BURACO)
         return any(

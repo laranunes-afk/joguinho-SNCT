@@ -33,7 +33,6 @@ class TesouroFinal:
         )
         return self.texto_aviso
 
-    @property
     def em_andamento(self):
         return self.inicio_caminhada is not None
 

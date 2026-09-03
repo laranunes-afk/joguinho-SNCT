@@ -123,8 +123,7 @@ class InterfaceFaseFinal:
             tela.blit(self.fundo, (x, 0))
             tela.blit(self.chao, (x, self.y_chao))
 
-    @staticmethod
-    def _segundos_decorridos(tempo_inicio):
+    def _segundos_decorridos(self, tempo_inicio):
         if tempo_inicio is None:
             return 0
         return (pygame.time.get_ticks() - tempo_inicio) // 1000

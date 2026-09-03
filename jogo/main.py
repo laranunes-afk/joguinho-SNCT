@@ -1,5 +1,3 @@
-from enum import Enum, auto
-
 import pygame
 
 from configuracoes_musica import iniciar_musica, parar_musica
@@ -24,14 +22,14 @@ RECOMPENSA_CHECKPOINT = 5
 RECOMPENSA_INIMIGO = 5
 
 
-class AcaoQuadro(Enum):
+class AcaoQuadro:
     """Decisões que fazem o laço principal mudar de caminho."""
 
-    CONTINUAR = auto()
-    MUDOU_FASE = auto()
-    REINICIAR = auto()
-    SAIR = auto()
-    FINALIZAR = auto()
+    CONTINUAR = object()
+    MUDOU_FASE = object()
+    REINICIAR = object()
+    SAIR = object()
+    FINALIZAR = object()
 
 
 class Jogo:
@@ -48,8 +46,7 @@ class Jogo:
         self.fonte_fase = pygame.font.Font(None, 42)
         self.fonte_lupas = pygame.font.Font(None, 36)
 
-    @staticmethod
-    def _ler_eventos():
+    def _ler_eventos(self):
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 return AcaoQuadro.SAIR
@@ -144,7 +141,7 @@ class Jogo:
         if resultado == "venceu":
             self.jogar_novamente = TelaFinal().mostrar(
                 self.tela,
-                estado.segundos_decorridos,
+                estado.segundos_decorridos(),
                 estado.lupas,
             )
             return AcaoQuadro.FINALIZAR

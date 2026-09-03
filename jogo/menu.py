@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 import pygame
 
 from configuracoes_tela import FPS, criar_tela
@@ -29,17 +27,23 @@ SETAS_PIXEL = {
     "esquerda": ("00100", "01100", "11111", "01100", "00100"),
     "direita": ("00100", "00110", "11111", "00110", "00100"),
 }
+_FONTES = {}
+_FUNDOS_MENU = {}
 
 
-@lru_cache(maxsize=None)
 def _fonte(tamanho):
     """Reutiliza fontes criadas para elementos desenhados a cada quadro."""
-    return pygame.font.Font(None, tamanho)
+    if tamanho not in _FONTES:
+        _FONTES[tamanho] = pygame.font.Font(None, tamanho)
+    return _FONTES[tamanho]
 
 
-@lru_cache(maxsize=4)
 def _fundo_menu(largura, altura):
     """Ajusta a arte do menu à tela sem deformar nem deixar bordas."""
+    chave = (largura, altura)
+    if chave in _FUNDOS_MENU:
+        return _FUNDOS_MENU[chave]
+
     original = carregar_imagem(ARQUIVO_FUNDO)
     escala = max(
         largura / original.get_width(),
@@ -52,7 +56,12 @@ def _fundo_menu(largura, altura):
     redimensionado = pygame.transform.scale(original, tamanho)
     area = pygame.Rect(0, 0, largura, altura)
     area.center = redimensionado.get_rect().center
-    return redimensionado.subsurface(area).copy()
+    fundo = redimensionado.subsurface(area).copy()
+    if len(_FUNDOS_MENU) >= 4:
+        primeira_chave = next(iter(_FUNDOS_MENU))
+        del _FUNDOS_MENU[primeira_chave]
+    _FUNDOS_MENU[chave] = fundo
+    return fundo
 
 
 def _forma_pixelada(rect, corte=10):

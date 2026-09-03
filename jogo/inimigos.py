@@ -24,7 +24,7 @@ MARGEM_PEDRA = (120, 0)
 MARGEM_VISIBILIDADE = 100
 TOLERANCIA_PISADA = 12
 INTENSIDADE_REBOTE = 0.55
-ARQUIVOS_INIMIGO = ("Homem Vilão6.png", "mulher vilão.png")
+ARQUIVOS_INIMIGO = ("Homem Vilão6.png", "Mulher Vilao.png")
 ALTURA_ARTE_INIMIGO = 92
 LIMIAR_ALPHA = 8
 DISTANCIA_FUNDO_ESCURO = 0.03
@@ -50,8 +50,7 @@ class Inimigo:
         # Cada vilão mantém, durante toda a vida, o sprite sorteado ao nascer.
         self.indice_imagem = random.choice(range(len(ARQUIVOS_INIMIGO)))
 
-    @classmethod
-    def _preparar_imagem(cls, nome_arquivo):
+    def _preparar_imagem(self, nome_arquivo):
         """Recorta o fundo e reduz a arte original com filtragem de qualidade."""
         imagem = carregar_imagem(nome_arquivo)
         if imagem.get_masks()[3] == 0:
@@ -81,15 +80,15 @@ class Inimigo:
             (largura, ALTURA_ARTE_INIMIGO),
         )
 
-    @classmethod
-    def _obter_imagens(cls):
+    def _obter_imagens(self):
         """Carrega os dois quadros somente na primeira utilização."""
-        if cls._imagens is None:
-            cls._imagens = tuple(
-                cls._preparar_imagem(nome)
+        if self._imagens is None:
+            self._imagens = tuple(
+                self._preparar_imagem(nome)
                 for nome in ARQUIVOS_INIMIGO
             )
-        return cls._imagens
+            Inimigo._imagens = self._imagens
+        return self._imagens
 
     def _esta_perto_de_buraco(self, buracos):
         return any(
@@ -168,8 +167,7 @@ class Inimigos:
         self._intervalo_geracao = DISTANCIAS_POR_FASE[self.numero_fase]
         self.proxima_posicao = random.randint(*self._intervalo_geracao)
 
-    @staticmethod
-    def _rota_sobre_buraco(inimigo, buracos):
+    def _rota_sobre_buraco(self, inimigo, buracos):
         """Verifica se a área real da patrulha cruza um buraco."""
         largura_rota = (
             inimigo.limite_direito

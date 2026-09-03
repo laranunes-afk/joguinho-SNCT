@@ -35,15 +35,14 @@ class Checkpoint:
         self.imagem_inativa = self._carregar_bandeira("Checkpoint.png")
         self.imagem_ativa = self._carregar_bandeira("CheckPoint-Verde.png")
 
-    @classmethod
-    def _carregar_bandeira(cls, nome_arquivo):
+    def _carregar_bandeira(self, nome_arquivo):
         """Carrega cada estado da bandeira somente uma vez."""
-        if nome_arquivo not in cls._imagens:
-            cls._imagens[nome_arquivo] = carregar_imagem_recortada(
+        if nome_arquivo not in self._imagens:
+            self._imagens[nome_arquivo] = carregar_imagem_recortada(
                 nome_arquivo,
                 TAMANHO_BANDEIRA,
             )
-        return cls._imagens[nome_arquivo]
+        return self._imagens[nome_arquivo]
 
     def foi_alcancado(self, personagem):
         """Informa se a personagem alcançou este checkpoint pela primeira vez."""

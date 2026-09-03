@@ -1,21 +1,19 @@
-from dataclasses import dataclass, field
-
 import pygame
 
 from recursos import renderizar_texto_contornado
 
 
-@dataclass
 class AvisoTemporario:
     """Dados necessários para animar uma mensagem sobre o cenário."""
 
-    texto: str
-    cor: tuple[int, int, int]
-    x: int
-    y: int
-    inicio: int
-    duracao: int
-    superficie: pygame.Surface = field(repr=False)
+    def __init__(self, texto, cor, x, y, inicio, duracao, superficie):
+        self.texto = texto
+        self.cor = cor
+        self.x = x
+        self.y = y
+        self.inicio = inicio
+        self.duracao = duracao
+        self.superficie = superficie
 
 
 class AvisosTemporarios:

@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 import pygame
 
 from configuracoes_tela import FPS
@@ -9,40 +7,62 @@ LETRAS_RESPOSTAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _CONTINUAR = object()
 
 
-@dataclass(frozen=True)
 class TemaMultiplaEscolha:
     """Agrupa apenas as escolhas visuais de uma tela de perguntas."""
 
-    cor_fundo: tuple
-    cor_botao: tuple
-    cor_botao_hover: tuple
-    cor_resposta: tuple
-    cor_letra: tuple
-    largura_maxima_botao: int
-    margem_horizontal: int
-    altura_botao: int
-    espacamento_botoes: int
-    inicio_botoes_minimo: int
-    y_pergunta: int
-    tamanho_fonte_pergunta: int
-    tamanho_fonte_resposta: int
-    tamanho_fonte_letra: int
-    tamanho_fonte_rodape: int
-    cor_rodape: tuple
-    margem_rodape: int
-    cor_borda: tuple | None = None
-    espessura_borda: int = 0
-    raio_borda: int = 10
+    def __init__(
+        self,
+        cor_fundo,
+        cor_botao,
+        cor_botao_hover,
+        cor_resposta,
+        cor_letra,
+        largura_maxima_botao,
+        margem_horizontal,
+        altura_botao,
+        espacamento_botoes,
+        inicio_botoes_minimo,
+        y_pergunta,
+        tamanho_fonte_pergunta,
+        tamanho_fonte_resposta,
+        tamanho_fonte_letra,
+        tamanho_fonte_rodape,
+        cor_rodape,
+        margem_rodape,
+        cor_borda=None,
+        espessura_borda=0,
+        raio_borda=10,
+    ):
+        self.cor_fundo = cor_fundo
+        self.cor_botao = cor_botao
+        self.cor_botao_hover = cor_botao_hover
+        self.cor_resposta = cor_resposta
+        self.cor_letra = cor_letra
+        self.largura_maxima_botao = largura_maxima_botao
+        self.margem_horizontal = margem_horizontal
+        self.altura_botao = altura_botao
+        self.espacamento_botoes = espacamento_botoes
+        self.inicio_botoes_minimo = inicio_botoes_minimo
+        self.y_pergunta = y_pergunta
+        self.tamanho_fonte_pergunta = tamanho_fonte_pergunta
+        self.tamanho_fonte_resposta = tamanho_fonte_resposta
+        self.tamanho_fonte_letra = tamanho_fonte_letra
+        self.tamanho_fonte_rodape = tamanho_fonte_rodape
+        self.cor_rodape = cor_rodape
+        self.margem_rodape = margem_rodape
+        self.cor_borda = cor_borda
+        self.espessura_borda = espessura_borda
+        self.raio_borda = raio_borda
 
 
-@dataclass(frozen=True)
 class LinhaCabecalho:
     """Texto centralizado que aparece acima da pergunta."""
 
-    texto: str
-    tamanho_fonte: int
-    cor: tuple
-    y: int
+    def __init__(self, texto, tamanho_fonte, cor, y):
+        self.texto = texto
+        self.tamanho_fonte = tamanho_fonte
+        self.cor = cor
+        self.y = y
 
 
 class TelaMultiplaEscolha:
@@ -99,8 +119,7 @@ class TelaMultiplaEscolha:
             for indice, letra in enumerate(LETRAS_RESPOSTAS[:quantidade])
         }
 
-    @staticmethod
-    def _validar_respostas(respostas, correta):
+    def _validar_respostas(self, respostas, correta):
         if not respostas:
             raise ValueError("A pergunta precisa ter ao menos uma resposta")
         if len(respostas) > len(LETRAS_RESPOSTAS):
