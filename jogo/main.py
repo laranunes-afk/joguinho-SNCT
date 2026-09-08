@@ -1,6 +1,12 @@
 import pygame
 
-from configuracoes_musica import iniciar_musica, parar_musica
+from configuracoes_musica import (
+    atualizar_passos,
+    iniciar_musica,
+    parar_musica,
+    parar_passos,
+    reproduzir_efeito,
+)
 from configuracoes_tela import (
     FPS,
     TOTAL_FASES,
@@ -69,6 +75,10 @@ class Jogo:
             fase.y_chao,
             estado.obstaculos.personagem_esta_sobre_buraco,
         )
+        atualizar_passos(
+            personagem.esta_caminhando(),
+            personagem.indice_quadro,
+        )
         if estado.houve_movimento(x_anterior):
             estado.mostrar_controles = False
 
@@ -91,6 +101,8 @@ class Jogo:
     def _coletar_lupas(self):
         quantidade = self.estado.moedas.coletar(self.estado.personagem)
         self.estado.lupas += quantidade
+        if quantidade:
+            reproduzir_efeito("lupa")
         for _ in range(quantidade):
             self.estado.avisos.adicionar(
                 self.estado.personagem,
@@ -104,6 +116,7 @@ class Jogo:
             if not checkpoint.foi_alcancado(estado.personagem):
                 continue
 
+            parar_passos()
             resposta = estado.perguntas.fazer(self.tela, estado.numero_fase)
             if resposta == "reiniciar":
                 return AcaoQuadro.REINICIAR, False, 0
@@ -113,6 +126,7 @@ class Jogo:
                 return AcaoQuadro.CONTINUAR, True, estado.perder_lupas(4)
 
             checkpoint.ativar()
+            reproduzir_efeito("checkpoint")
             estado.ponto_retorno_x = checkpoint.posicao_retorno
             estado.lupas += RECOMPENSA_CHECKPOINT
             estado.avisos.adicionar(
@@ -133,6 +147,7 @@ class Jogo:
 
     def _executar_fase_final(self):
         estado = self.estado
+        parar_passos()
         resultado, estado.lupas = FaseFinal(
             self.largura,
             self.altura,
@@ -188,6 +203,7 @@ class Jogo:
         if not deve_retornar:
             return
 
+        reproduzir_efeito("perda")
         estado = self.estado
         reposicionar(
             estado.personagem,

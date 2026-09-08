@@ -1,5 +1,10 @@
 import pygame
 
+from configuracoes_musica import (
+    atualizar_passos,
+    parar_passos,
+    reproduzir_efeito,
+)
 from configuracoes_tela import FPS
 from dados_perguntas import (
     APRESENTADORES,
@@ -86,6 +91,10 @@ class FaseFinal:
             return lupas + recompensa
 
         self.personagem.atualizar(self.y_chao)
+        atualizar_passos(
+            self.personagem.esta_caminhando(),
+            self.personagem.indice_quadro,
+        )
         self.tesouro.tentar_iniciar(self.personagem, agora)
         self.tesouro.limitar_saida_usada(self.personagem)
         return lupas
@@ -97,6 +106,7 @@ class FaseFinal:
             if pessoa.respondida or not encontrou:
                 continue
 
+            parar_passos()
             resposta = self.pergunta.fazer(tela, pessoa.pergunta, numero)
             if resposta is None:
                 return "sair", lupas
@@ -152,6 +162,7 @@ class FaseFinal:
         while True:
             resultado_evento = self._processar_eventos()
             if resultado_evento is not None:
+                parar_passos()
                 return resultado_evento, lupas
 
             rect_anterior = self.personagem.rect.copy()
@@ -165,9 +176,13 @@ class FaseFinal:
                 self._bloquear_apresentadores(rect_anterior)
                 resultado, lupas = self._verificar_perguntas(tela, lupas)
                 if resultado is not None:
+                    if resultado == "reiniciar":
+                        reproduzir_efeito("perda")
+                    parar_passos()
                     return resultado, lupas
 
             if self._todas_perguntas_respondidas():
+                parar_passos()
                 return "venceu", lupas
 
             self._atualizar_camera()

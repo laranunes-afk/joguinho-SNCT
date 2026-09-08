@@ -1,16 +1,18 @@
 import pygame
 
+from configuracoes_musica import reproduzir_efeito
 from recursos import carregar_imagem
 
 
-# Arquivo principal com os quadros da personagem parada e correndo.
-ARQUIVO_SPRITES = "personagem-transparente.png"
+# Arquivo principal, já transparente, com a personagem parada nas pontas e
+# os quadros de corrida entre elas.
+ARQUIVO_SPRITES = "personagem.png"
 # Arquivo separado com os quadros usados durante o pulo.
 ARQUIVO_SPRITES_PULO = "PERSONAGEM PULANDO.png"
 # Quantidade total de quadros de corrida nas duas linhas da spritesheet, sem a pose parada.
 TOTAL_QUADROS_CORRIDA = 16
-# A primeira pose fica parada; as outras 16 formam a corrida completa.
-TOTAL_POSES = TOTAL_QUADROS_CORRIDA + 1
+# A pose parada aparece no início e se repete no fim da nova spritesheet.
+TOTAL_POSES = TOTAL_QUADROS_CORRIDA + 2
 # Quantidade de quadros da animação de pulo.
 TOTAL_QUADROS_PULO = 7
 # Tempo mínimo, em milissegundos, entre dois quadros da corrida.
@@ -19,6 +21,11 @@ INTERVALO_ANIMACAO_MS = 100
 TAMANHO_MINIMO_COMPONENTE = 100
 # Tolerância usada para identificar pixels quase brancos do fundo.
 LIMIAR_FUNDO_CLARO = 36
+# Ignora resíduos quase transparentes ao medir cada sprite.
+LIMIAR_ALPHA_SPRITE = 128
+# Folga usada para recuperar braços, cabelo e pés que ultrapassam a divisão
+# visual entre duas células da spritesheet.
+MARGEM_RECORTE_SPRITE = 32
 # Quanto da personagem ainda fica visível ao começar a entrar em um buraco.
 MARGEM_VISIVEL_NO_BURACO = 14
 # Espaço lateral extra usado para evitar que a pose mude de posição visualmente.
@@ -64,6 +71,8 @@ class Personagem:
         self.no_chao = False
         # Armazena o estado anterior da tecla de pulo para detectar um novo toque.
         self._pulo_pressionado = False
+        # Permite que o áudio reconheça exatamente o quadro em que o pulo começou.
+        self.pulo_iniciado_no_quadro = False
 
         # Depois de entrar em um buraco, não pode pousar na outra borda
         # durante a mesma queda. O estado é limpo ao reposicionar.
@@ -107,47 +116,133 @@ class Personagem:
         self.virado_para_esquerda = False
 
     def _localizar_quadros(self, sprites):
-        """Localiza cada pose pelos pixels conectados, sem recortes fixos."""
-        # Converte os pixels visíveis em uma máscara binária.
-        mascara = pygame.mask.from_surface(sprites, threshold=1)
-        # Cada componente conectado tende a representar uma pose da spritesheet.
-        limites = [
-            componente.get_bounding_rects()[0]
-            for componente in mascara.connected_components(
-                TAMANHO_MINIMO_COMPONENTE
-            )
-        ]
-
-        # Ordena todas as poses por linha e, dentro de cada linha, da esquerda para a direita.
-        # Assim, os quadros das duas linhas entram na mesma sequência da animação.
-        quadros_ordenados = sorted(
-            limites,
-            key=lambda area: (area.y, area.x),
+        """Localiza uma célula aproximada para cada pose da spritesheet."""
+        largura_total, altura_total = sprites.get_size()
+        mascara = pygame.mask.from_surface(
+            sprites,
+            threshold=LIMIAR_ALPHA_SPRITE,
         )
-        return quadros_ordenados
+        largura_media = largura_total // TOTAL_POSES
+        raio_busca = max(4, largura_media // 3)
+        separadores = [0]
+
+        for indice in range(1, TOTAL_POSES):
+            esperado = indice * largura_total // TOTAL_POSES
+            inicio_busca = max(separadores[-1] + 1, esperado - raio_busca)
+            fim_busca = min(largura_total - 1, esperado + raio_busca)
+
+            def avaliar_coluna(x):
+                pixels = sum(
+                    mascara.get_at((x, y))
+                    for y in range(altura_total)
+                )
+                return pixels, abs(x - esperado)
+
+            separador = min(
+                range(inicio_busca, fim_busca + 1),
+                key=avaliar_coluna,
+            )
+            separadores.append(separador)
+
+        separadores.append(largura_total)
+        limites = []
+
+        for indice in range(TOTAL_POSES):
+            inicio_x = separadores[indice]
+            fim_x = separadores[indice + 1]
+            celula = sprites.subsurface(
+                (inicio_x, 0, fim_x - inicio_x, altura_total),
+            )
+            area_visivel = celula.get_bounding_rect(LIMIAR_ALPHA_SPRITE)
+            if not area_visivel.width or not area_visivel.height:
+                raise ValueError(
+                    f"A célula {indice + 1} da personagem está vazia"
+                )
+            area_visivel.move_ip(inicio_x, 0)
+            limites.append(area_visivel)
+
+        return limites
+
+    def _calcular_escala(self, limites, largura, altura):
+        """Usa os mesmos parâmetros de tamanho para corrida e pulo."""
+        largura_base = max(area.width for area in limites)
+        altura_base = max(area.height for area in limites)
+        return min(largura / largura_base, altura / altura_base)
+
+    def _isolar_personagem(self, quadro):
+        """Mantém a pose central e descarta pedaços das poses vizinhas."""
+        mascara = pygame.mask.from_surface(
+            quadro,
+            threshold=LIMIAR_ALPHA_SPRITE,
+        )
+        componentes = mascara.connected_components()
+        if not componentes:
+            return quadro
+
+        personagem = max(componentes, key=lambda item: item.count())
+        mascara_personagem = personagem.to_surface(
+            setcolor=(255, 255, 255, 255),
+            unsetcolor=(255, 255, 255, 0),
+        )
+        isolado = quadro.copy()
+        isolado.blit(
+            mascara_personagem,
+            (0, 0),
+            special_flags=pygame.BLEND_RGBA_MULT,
+        )
+        area_visivel = isolado.get_bounding_rect(1)
+        if area_visivel.width and area_visivel.height:
+            return isolado.subsurface(area_visivel).copy()
+        return isolado
+
+    def _extrair_quadros_corrida(self, sprites):
+        """Recupera cada pose inteira, mesmo quando ela invade a célula vizinha."""
+        limites = self._localizar_quadros(sprites)
+        area_sprites = sprites.get_rect()
+        quadros = []
+
+        for area in limites:
+            area_com_folga = area.inflate(MARGEM_RECORTE_SPRITE * 2, 0)
+            area_com_folga.clamp_ip(area_sprites)
+            quadro = sprites.subsurface(area_com_folga).copy()
+            quadros.append(self._isolar_personagem(quadro))
+
+        return quadros
 
     def _carregar_quadros(self, largura, altura):
         # Carrega a imagem que contém a pose parada e os quadros de corrida.
         sprites = carregar_imagem(ARQUIVO_SPRITES)
-        # Descobre automaticamente onde cada pose está localizada.
-        limites = self._localizar_quadros(sprites)
+        # Descobre automaticamente onde cada pose está localizada e recupera
+        # as partes que avançam para a célula vizinha.
+        quadros_base = self._extrair_quadros_corrida(sprites)
         # Falha cedo caso a spritesheet tenha sido alterada ou esteja incompleta.
-        if len(limites) != TOTAL_POSES:
+        if len(quadros_base) != TOTAL_POSES:
             raise ValueError(
                 f"Esperadas {TOTAL_POSES} poses da personagem; "
-                f"encontrados {len(limites)}"
+                f"encontrados {len(quadros_base)}"
             )
 
         # Usa o maior quadro como referência para manter todas as poses proporcionais.
-        largura_base = max(area.width for area in limites)
-        altura_base = max(area.height for area in limites)
-        # Escolhe uma escala que caiba simultaneamente na largura e na altura desejadas.
-        escala = min(largura / largura_base, altura / altura_base)
+        escala = self._calcular_escala(
+            [quadro.get_rect() for quadro in quadros_base],
+            largura,
+            altura,
+        )
         # Recorta, redimensiona e alinha cada pose em um canvas de tamanho comum.
-        return [
-            self._preparar_quadro(sprites, area, largura, altura, escala)
-            for area in limites
+        poses = [
+            self._preparar_quadro(
+                quadro,
+                quadro.get_rect(),
+                largura,
+                altura,
+                escala,
+            )
+            for quadro in quadros_base
         ]
+        # A última pose é uma repetição da primeira e serve apenas para fechar
+        # visualmente a sequência na imagem; a animação usa os 16 quadros entre
+        # as duas poses paradas.
+        return poses[:-1]
 
     def _remover_fundo_claro(self, sprites):
         """Remove apenas o fundo claro conectado às bordas da spritesheet."""
@@ -232,9 +327,11 @@ class Personagem:
             )
 
         # Calcula uma escala comum para todos os quadros de pulo.
-        largura_base = max(area.width for area in limites)
-        altura_base = max(area.height for area in limites)
-        escala = min(largura / largura_base, altura / altura_base)
+        escala = self._calcular_escala(
+            limites,
+            largura,
+            altura,
+        )
         # Prepara cada quadro no mesmo tamanho e alinhamento visual.
         quadros = tuple(
             self._preparar_quadro(
@@ -250,7 +347,14 @@ class Personagem:
         self._quadros_pulo_por_tamanho[chave] = quadros
         return quadros
 
-    def _preparar_quadro(self, sprites, area, largura, altura, escala):
+    def _preparar_quadro(
+        self,
+        sprites,
+        area,
+        largura,
+        altura,
+        escala,
+    ):
         """Redimensiona e estabiliza uma pose em um canvas comum."""
         # Recorta somente a área ocupada pela pose atual.
         quadro = sprites.subsurface(area).copy()
@@ -306,6 +410,14 @@ class Personagem:
         # Retorna -1 para esquerda, 1 para direita e 0 quando não há direção.
         return int(direita) - int(esquerda)
 
+    def esta_caminhando(self):
+        """Indica se a animação e o som de passos devem permanecer ativos."""
+        return (
+            self.em_movimento
+            and self.no_chao
+            and not self.caindo_no_buraco
+        )
+
     def mover(self):
         """Lê as teclas horizontais e desloca a hitbox."""
         # Obtém o estado atual do teclado e calcula a direção horizontal.
@@ -318,12 +430,15 @@ class Personagem:
             # Atualiza a orientação apenas quando existe movimento.
             self.virado_para_esquerda = direcao < 0
         else:
-            # Ao soltar as teclas, reinicia a corrida para mostrar a pose parada.
+            # Ao soltar as teclas, retorna exatamente ao primeiro sprite da
+            # folha: parado e voltado para a direita.
             self.indice_quadro = 0
+            self.virado_para_esquerda = False
             self.ultimo_quadro = pygame.time.get_ticks()
 
     def pular(self):
         """Inicia o pulo somente quando a personagem está apoiada."""
+        self.pulo_iniciado_no_quadro = False
         # Lê as duas teclas aceitas para iniciar o pulo.
         teclas = pygame.key.get_pressed()
         pediu_pulo = teclas[pygame.K_w] or teclas[pygame.K_UP]
@@ -335,6 +450,7 @@ class Personagem:
             # Aplica o impulso vertical e marca que a personagem deixou o chão.
             self.velocidade_y = self.forca_pulo
             self.no_chao = False
+            self.pulo_iniciado_no_quadro = True
 
     def posicionar_no_chao(self, x_visual, y_chao):
         """Restaura posição e estado físico em um ponto seguro."""
@@ -349,6 +465,12 @@ class Personagem:
         # Limpa o estado especial de queda no buraco.
         self.caindo_no_buraco = False
         self.oculto_no_buraco = False
+        # Uma reposição sempre começa com a pose parada, sem reaproveitar o
+        # último quadro da caminhada anterior.
+        self.em_movimento = False
+        self.indice_quadro = 0
+        self.virado_para_esquerda = False
+        self.ultimo_quadro = pygame.time.get_ticks()
 
     def rebater(self, intensidade=0.55):
         """Impulsiona a personagem após cair sobre um inimigo."""
@@ -373,7 +495,12 @@ class Personagem:
         # Aumenta gradualmente a velocidade vertical para simular gravidade.
         self.velocidade_y += self.gravidade
         # Move a hitbox verticalmente usando a velocidade atual.
+        y_anterior = self.rect.y
         self.rect.y += int(self.velocidade_y)
+        if self.pulo_iniciado_no_quadro and self.rect.y < y_anterior:
+            # Dispara no exato primeiro deslocamento para cima, sem esperar
+            # que o restante da atualização do quadro seja concluído.
+            reproduzir_efeito("pulo")
 
         if self.rect.bottom >= y_chao and not ignorar_chao:
             # Impede que a personagem atravesse o chão e zera a queda.
