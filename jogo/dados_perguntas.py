@@ -84,7 +84,7 @@ DESAFIOS_FINAIS = (
     DesafioFinal(
         (105, 180, 105),
         "ELIAS.png",
-        130,
+        118,
         (
             "Qual linguagem e usada para estruturar paginas da internet?",
             ["HTML", "Python", "SQL", "C++"],

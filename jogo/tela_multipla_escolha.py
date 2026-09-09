@@ -71,6 +71,7 @@ class TelaMultiplaEscolha:
     def __init__(self, tema):
         self.tema = tema
         self._fontes = {}
+        self._selecionada = 0
 
     def _fonte(self, tamanho):
         """Reaproveita fontes, evitando recriá-las durante o laço da tela."""
@@ -141,6 +142,7 @@ class TelaMultiplaEscolha:
         largura, altura = tela.get_size()
         botoes = self._criar_botoes(largura, altura, len(respostas))
         teclas = self._mapear_teclas(len(respostas))
+        self._selecionada = 0
         textos_fixos = self._preparar_textos(
             pergunta,
             respostas,
@@ -170,8 +172,14 @@ class TelaMultiplaEscolha:
                     return None
                 if evento.key == pygame.K_TAB:
                     return "reiniciar"
+                if evento.key in (pygame.K_UP, pygame.K_LEFT):
+                    self._selecionada = (self._selecionada - 1) % len(botoes)
+                elif evento.key in (pygame.K_DOWN, pygame.K_RIGHT):
+                    self._selecionada = (self._selecionada + 1) % len(botoes)
                 if evento.key in teclas:
                     return teclas[evento.key] == correta
+                if evento.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return self._selecionada == correta
 
             if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
                 for indice, botao in enumerate(botoes):
@@ -229,8 +237,14 @@ class TelaMultiplaEscolha:
             pergunta.get_rect(center=(tela.get_width() // 2, self.tema.y_pergunta)),
         )
 
-        for botao, textos_resposta in zip(botoes, respostas):
-            self._desenhar_botao(tela, botao, textos_resposta, mouse)
+        for indice, (botao, textos_resposta) in enumerate(zip(botoes, respostas)):
+            self._desenhar_botao(
+                tela,
+                botao,
+                textos_resposta,
+                mouse,
+                indice == self._selecionada,
+            )
 
         tela.blit(
             rodape,
@@ -239,10 +253,10 @@ class TelaMultiplaEscolha:
             ),
         )
 
-    def _desenhar_botao(self, tela, botao, textos, mouse):
+    def _desenhar_botao(self, tela, botao, textos, mouse, selecionado):
         cor = (
             self.tema.cor_botao_hover
-            if botao.collidepoint(mouse)
+            if selecionado or botao.collidepoint(mouse)
             else self.tema.cor_botao
         )
         pygame.draw.rect(tela, cor, botao, border_radius=self.tema.raio_borda)

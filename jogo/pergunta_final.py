@@ -61,5 +61,5 @@ class PerguntaFinal:
             respostas,
             correta,
             cabecalho,
-            "TAB REINICIA TODA A JOGATINA",
+            "SETAS + ENTER  |  Clique ou A-D respondem  |  TAB reinicia",
         )

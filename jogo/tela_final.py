@@ -177,6 +177,7 @@ class TelaFinal:
 
     def _desenhar_campo_nome(self, tela, fontes, layout, estado):
         campo_nome = layout.campo_nome
+        inicio_texto_x = campo_nome.left + 15
         pygame.draw.rect(tela, (45, 75, 100), campo_nome, border_radius=10)
         pygame.draw.rect(
             tela,
@@ -190,12 +191,28 @@ class TelaFinal:
             True,
             (255, 255, 255) if estado.nome else (170, 185, 200),
         )
+        texto_x = inicio_texto_x if estado.nome else inicio_texto_x + 6
         tela.blit(
             texto_nome,
             texto_nome.get_rect(
-                midleft=(campo_nome.left + 15, campo_nome.centery),
+                midleft=(texto_x, campo_nome.centery),
             ),
         )
+
+        cursor_visivel = (
+            not estado.salvo
+            and (pygame.time.get_ticks() // 500) % 2 == 0
+        )
+        if cursor_visivel:
+            largura_nome = fontes.resumo.size(estado.nome)[0]
+            cursor_x = inicio_texto_x + largura_nome + (3 if estado.nome else 0)
+            pygame.draw.line(
+                tela,
+                (255, 255, 255),
+                (cursor_x, campo_nome.top + 11),
+                (cursor_x, campo_nome.bottom - 11),
+                2,
+            )
 
     def _desenhar_ranking(self, tela, largura, fontes, ranking):
         titulo = fontes.resumo.render("TOP 10", True, (255, 215, 55))

@@ -13,6 +13,12 @@
   },
   {
     "nome": "lara",
+    "tempo": 94,
+    "lupas": 138,
+    "pontos": 16330
+  },
+  {
+    "nome": "lara",
     "tempo": 67,
     "lupas": 135,
     "pontos": 16165
@@ -52,11 +58,5 @@
     "tempo": 75,
     "lupas": 123,
     "pontos": 14925
-  },
-  {
-    "nome": "lara",
-    "tempo": 69,
-    "lupas": 121,
-    "pontos": 14755
   }
 ]

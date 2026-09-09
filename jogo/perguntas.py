@@ -79,5 +79,5 @@ class Perguntas:
             respostas,
             correta,
             cabecalho,
-            "Responda com A, B, C ou D  |  TAB reinicia o jogo",
+            "SETAS + ENTER  |  Clique ou A-D respondem  |  TAB reinicia",
         )

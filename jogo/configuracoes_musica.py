@@ -13,7 +13,7 @@ RAIZ_PROJETO = __file__.replace("\\", "/").rsplit("/", 2)[0]
 PASTA_MUSICAS = RAIZ_PROJETO + "/musica"
 NOME_MUSICA = "SNCT2026JOGO.mp3"
 CAMINHO_MUSICA = PASTA_MUSICAS + "/" + NOME_MUSICA
-VOLUME_MUSICA = 0.05
+VOLUME_MUSICA = 0.2
 REPETICOES = -1  # -1 mantém a música tocando em loop.
 
 ARQUIVOS_EFEITOS = {
