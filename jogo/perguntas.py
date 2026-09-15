@@ -1,33 +1,13 @@
 import random
 
+from layout_perguntas import LayoutPerguntas
+
 from dados_perguntas import PERGUNTAS_POR_FASE, TIPOS_DE_PERGUNTA
 from tela_multipla_escolha import (
     LinhaCabecalho,
-    TelaMultiplaEscolha,
-    TemaMultiplaEscolha,
 )
 
 
-TEMA_PERGUNTAS = TemaMultiplaEscolha(
-    cor_fundo=(20, 30, 50),
-    cor_botao=(50, 85, 125),
-    cor_botao_hover=(75, 135, 185),
-    cor_resposta=(255, 255, 255),
-    cor_letra=(255, 255, 255),
-    largura_maxima_botao=900,
-    margem_horizontal=60,
-    altura_botao=70,
-    espacamento_botoes=18,
-    inicio_botoes_minimo=220,
-    y_pergunta=140,
-    tamanho_fonte_pergunta=44,
-    tamanho_fonte_resposta=36,
-    tamanho_fonte_letra=36,
-    tamanho_fonte_rodape=28,
-    cor_rodape=(190, 200, 215),
-    margem_rodape=35,
-    raio_borda=12,
-)
 
 
 class Perguntas:
@@ -41,7 +21,7 @@ class Perguntas:
         }
         # Os controles acompanham automaticamente as fases presentes nos dados.
         self.indices = {fase: 0 for fase in self.listas}
-        self.tela_pergunta = TelaMultiplaEscolha(TEMA_PERGUNTAS)
+        self.tela_pergunta = LayoutPerguntas(1)
 
         for lista in self.listas.values():
             random.shuffle(lista)
@@ -65,11 +45,12 @@ class Perguntas:
     def fazer(self, tela, fase):
         """Mantém o contrato antigo: acerto, erro, saída ou reinício."""
         pergunta, respostas, correta = self._proxima_pergunta(fase)
+        self.tela_pergunta.definir_fase(fase)
         cabecalho = (
             LinhaCabecalho(
                 f"FASE {fase} - {self.tipos[fase]}",
                 tamanho_fonte=58,
-                cor=(245, 190, 45),
+                cor=self.tela_pergunta.tema.cor_letra,
                 y=65,
             ),
         )

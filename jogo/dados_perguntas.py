@@ -7,16 +7,19 @@ TIPOS_DE_PERGUNTA = {
 PERGUNTAS_POR_FASE = {
     1: [
         (
-            "Qual é a capital do Brasil?",
-            ["Brasília", "Salvador", "São Paulo", "Recife"],
-            0,
+            "Qual é o maior deserto do mundo?",
+            ["Sahara", "Gobi", "Antárctida", "Atacama"],
+            2,
         ),
         (
-            "Em qual continente fica o Brasil?",
+            "Em qual continente fica o Egito?",
             ["Europa", "Ásia", "América do Sul", "África"],
             2,
         ),
-        ("Quantos dias possui uma semana?", ["Cinco", "Seis", "Sete", "Oito"], 2),
+        (
+            "Quantos dias possui uma semana?", 
+            ["Cinco", "Seis", "Sete", "Oito"], 
+            2),
         (
             "Qual idioma é falado oficialmente no Brasil?",
             ["Espanhol", "Português", "Inglês", "Francês"],

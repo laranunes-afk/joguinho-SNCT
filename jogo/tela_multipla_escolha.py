@@ -79,9 +79,13 @@ class TelaMultiplaEscolha:
             self._fontes[tamanho] = pygame.font.Font(None, tamanho)
         return self._fontes[tamanho]
 
-    def _criar_botoes(self, largura, altura, quantidade):
+    def _largura_conteudo(self, largura):
+        """Mantém botões e painel alinhados pela mesma largura disponível."""
         largura_disponivel = max(1, largura - self.tema.margem_horizontal * 2)
-        largura_botao = min(self.tema.largura_maxima_botao, largura_disponivel)
+        return min(self.tema.largura_maxima_botao, largura_disponivel)
+
+    def _criar_botoes(self, largura, altura, quantidade):
+        largura_botao = self._largura_conteudo(largura)
         inicio_y = max(self.tema.inicio_botoes_minimo, altura // 3)
         margem_inferior = max(self.tema.margem_rodape + 32, 64)
         espaco_disponivel = max(quantidade, altura - margem_inferior - inicio_y)
@@ -167,6 +171,14 @@ class TelaMultiplaEscolha:
             if evento.type == pygame.QUIT:
                 return None
 
+            if evento.type == pygame.MOUSEMOTION:
+                # O cursor parado não mantém outra alternativa destacada
+                # quando a navegação passa para o teclado.
+                for indice, botao in enumerate(botoes):
+                    if botao.collidepoint(evento.pos):
+                        self._selecionada = indice
+                        break
+
             if evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_ESCAPE:
                     return None
@@ -227,7 +239,7 @@ class TelaMultiplaEscolha:
 
     def _desenhar(self, tela, botoes, mouse, textos_fixos, altura):
         cabecalho, pergunta, respostas, rodape = textos_fixos
-        tela.fill(self.tema.cor_fundo)
+        self._desenhar_fundo(tela)
 
         for texto, y in cabecalho:
             tela.blit(texto, texto.get_rect(center=(tela.get_width() // 2, y)))
@@ -253,10 +265,13 @@ class TelaMultiplaEscolha:
             ),
         )
 
+    def _desenhar_fundo(self, tela):
+        tela.fill(self.tema.cor_fundo)
+
     def _desenhar_botao(self, tela, botao, textos, mouse, selecionado):
         cor = (
             self.tema.cor_botao_hover
-            if selecionado or botao.collidepoint(mouse)
+            if selecionado
             else self.tema.cor_botao
         )
         pygame.draw.rect(tela, cor, botao, border_radius=self.tema.raio_borda)
