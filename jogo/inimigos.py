@@ -24,10 +24,11 @@ MARGEM_PEDRA = (120, 0)
 MARGEM_VISIBILIDADE = 100
 TOLERANCIA_PISADA = 12
 INTENSIDADE_REBOTE = 0.55
-ARQUIVOS_INIMIGO = ("Homem Vilão6.png", "Mulher Vilao.png")
+ARQUIVOS_INIMIGO = ("HOMEM TENTANDO AMDAR.png", "MULHER TENTANDO ANDAR.png")
+TOTAL_QUADROS_CAMINHADA = 8
+INTERVALO_ANIMACAO_MS = 100
 ALTURA_ARTE_INIMIGO = 92
-LIMIAR_ALPHA = 8
-DISTANCIA_FUNDO_ESCURO = 0.03
+LIMIAR_ALPHA = 128
 
 
 class Inimigo:
@@ -49,46 +50,60 @@ class Inimigo:
         self.derrotado = False
         # Cada vilão mantém, durante toda a vida, o sprite sorteado ao nascer.
         self.indice_imagem = random.choice(range(len(ARQUIVOS_INIMIGO)))
+        self.indice_quadro = 0
+        self.ultimo_quadro = pygame.time.get_ticks()
 
     def _preparar_imagem(self, nome_arquivo):
-        """Recorta o fundo e reduz a arte original com filtragem de qualidade."""
-        imagem = carregar_imagem(nome_arquivo)
-        if imagem.get_masks()[3] == 0:
-            imagem = imagem.convert_alpha()
-            pixels = pygame.PixelArray(imagem)
-            pixels.replace(
-                (0, 0, 0, 255),
-                (0, 0, 0, 0),
-                distance=DISTANCIA_FUNDO_ESCURO,
-            )
-            del pixels
+        """Extrai as oito poses e mantém escala e alinhamento na caminhada."""
+        sprites = carregar_imagem(nome_arquivo)
+        mascara = pygame.mask.from_surface(sprites, threshold=LIMIAR_ALPHA)
+        componentes = sorted(
+            mascara.connected_components(),
+            key=lambda componente: componente.count(),
+            reverse=True,
+        )[:TOTAL_QUADROS_CAMINHADA]
+        if len(componentes) != TOTAL_QUADROS_CAMINHADA:
+            raise ValueError(f"Esperadas oito poses em {nome_arquivo}")
+        componentes.sort(key=lambda componente: componente.get_bounding_rects()[0].x)
+        quadros = []
+        for componente in componentes:
+            area = componente.get_bounding_rects()[0]
+            quadro = sprites.subsurface(area).copy()
+            # Isola a pose para não incluir braços e pés dos vizinhos.
+            recorte = componente.to_surface(
+                setcolor=(255, 255, 255, 255),
+                unsetcolor=(255, 255, 255, 0),
+            ).subsurface(area)
+            quadro.blit(recorte, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+            quadros.append(quadro)
 
-        area_visivel = imagem.get_bounding_rect(min_alpha=LIMIAR_ALPHA)
-        if area_visivel.width and area_visivel.height:
-            imagem = imagem.subsurface(area_visivel).copy()
-
-        largura = max(
-            1,
-            round(
-                imagem.get_width()
-                * ALTURA_ARTE_INIMIGO
-                / imagem.get_height()
-            ),
-        )
-        return pygame.transform.smoothscale(
-            imagem,
-            (largura, ALTURA_ARTE_INIMIGO),
-        )
+        escala = ALTURA_ARTE_INIMIGO / max(q.get_height() for q in quadros)
+        preparados = []
+        ancoras = []
+        for quadro in quadros:
+            tamanho = tuple(max(1, round(valor * escala)) for valor in quadro.get_size())
+            quadro = pygame.transform.smoothscale(quadro, tamanho)
+            tronco = quadro.subsurface((0, 0, tamanho[0], round(tamanho[1] * 0.65)))
+            ancoras.append(pygame.mask.from_surface(tronco).centroid()[0])
+            preparados.append(quadro)
+        # Reserva espaço suficiente dos dois lados do tronco para todas as poses.
+        margem = max(max(ancoras), max(q.get_width() - x for q, x in zip(preparados, ancoras)))
+        esquerda = []
+        for quadro, ancora in zip(preparados, ancoras):
+            alinhado = pygame.Surface((margem * 2 + 2, ALTURA_ARTE_INIMIGO), pygame.SRCALPHA)
+            alinhado.blit(quadro, (margem - ancora, ALTURA_ARTE_INIMIGO - quadro.get_height()))
+            esquerda.append(alinhado)
+        # As artes originais olham para a esquerda.
+        direita = tuple(pygame.transform.flip(q, True, False) for q in esquerda)
+        return direita, tuple(esquerda)
 
     def _obter_imagens(self):
-        """Carrega os dois quadros somente na primeira utilização."""
-        if self._imagens is None:
-            self._imagens = tuple(
-                self._preparar_imagem(nome)
-                for nome in ARQUIVOS_INIMIGO
+        """Compartilha os quadros e seus espelhamentos entre todos os inimigos."""
+        if Inimigo._imagens is None:
+            Inimigo._imagens = tuple(
+                self._preparar_imagem(nome) for nome in ARQUIVOS_INIMIGO
             )
-            Inimigo._imagens = self._imagens
-        return self._imagens
+        return Inimigo._imagens
 
     def _esta_perto_de_buraco(self, buracos):
         return any(
@@ -114,6 +129,12 @@ class Inimigo:
         if self.derrotado:
             return
 
+        agora = pygame.time.get_ticks()
+        passos = (agora - self.ultimo_quadro) // INTERVALO_ANIMACAO_MS
+        if passos:
+            self.indice_quadro = (self.indice_quadro + passos) % TOTAL_QUADROS_CAMINHADA
+            self.ultimo_quadro += passos * INTERVALO_ANIMACAO_MS
+
         x_anterior = self.rect.x
         self.rect.x += self.velocidade
         encontrou_bloqueio = (
@@ -138,7 +159,8 @@ class Inimigo:
         if self.derrotado:
             return
 
-        imagem = self._obter_imagens()[self.indice_imagem]
+        quadros = self._obter_imagens()[self.indice_imagem][int(self.velocidade < 0)]
+        imagem = quadros[self.indice_quadro]
         destino = imagem.get_rect(
             midbottom=(
                 self.rect.centerx - int(camera_x),
