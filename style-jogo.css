@@ -1,0 +1,194 @@
+:root {
+    --bg-color: #e7d2a9;       
+    --card-bg: #efebe0;        
+    --accent: #997927;         
+    --text-dark: #2c251e;      
+    --text-muted: #6e6458;     
+    --border: #cab180;         
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Georgia, serif;
+}
+
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-dark);
+    line-height: 1.7;
+}
+
+.header {
+    width: 100%;
+    padding: 1.2rem 0;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid #cab180;
+    position: sticky;
+    top: 0;
+    background-color:  #eccd8d;;
+    z-index: 100;
+}
+
+.nav {
+    display: flex;
+    gap: 1.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nav a {
+    color: #6e6458;
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.nav a:hover {
+    color: #997927;
+    font-weight: 600;
+}
+
+.principal {
+    max-width: 800px;
+    margin: 3rem auto 4rem;
+    padding: 0 1.5rem;
+}
+
+.tp {
+    text-align: center;
+    padding: 1rem 1rem 2rem;
+}
+
+.tag {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.tp h1 {
+    font-size: 2.4rem;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    margin: 0.4rem 0 0.6rem;
+}
+
+.figura p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.figura {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    margin: 0 0 1.5rem 0;
+}
+
+.figura-media {
+    margin-bottom: 2.5rem;
+}
+
+.foto {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+
+.caption {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.6rem;
+    text-align: center;
+}
+
+.sj {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+
+.sj h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+    color: var(--text-dark);
+}
+
+.sj p {
+    color: var(--text-muted);
+}
+
+
+.game {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+
+.game h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+    color: var(--text-dark);
+}
+
+.game p {
+    color: var(--text-muted);
+}
+
+
+.dif {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 2rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+
+.dif h2 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 0.8rem;
+    color: var(--text-dark);
+}
+
+.dif p {
+    color: var(--text-muted);
+}
+
+.link{
+    text-align: center;
+}
+
+.footer {
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+h1 {
+    font-size: 2.4rem;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    margin: 0.4rem 0 0.6rem;
+}
