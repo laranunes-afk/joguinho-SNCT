@@ -17,9 +17,9 @@ PERGUNTAS_POR_FASE = {
             2,
         ),
         (
-            "Quantos dias possui uma semana?", 
-            ["Cinco", "Seis", "Sete", "Oito"], 
-            2),
+            "Qual é o maior oceano do mundo?",
+            ["Atlântico", "Índico", "Ártico", "Pacífico"], 
+            3),
         (
             "Qual idioma é falado oficialmente no Brasil?",
             ["Espanhol", "Português", "Inglês", "Francês"],
@@ -28,7 +28,7 @@ PERGUNTAS_POR_FASE = {
     ],
     2: [
         ("Quanto é 7 x 8?", ["48", "54", "56", "64"], 2),
-        ("Quanto é 100 dividido por 4?", ["20", "25", "30", "40"], 1),
+        ("Qual é o número atômico do carbono?", ["4", "6", "8", "12"], 2),
         ("Quanto é 35 + 27?", ["52", "60", "62", "72"], 2),
         ("Quantos lados possui um hexágono?", ["Cinco", "Seis", "Sete", "Oito"], 1),
     ],
@@ -44,8 +44,8 @@ PERGUNTAS_POR_FASE = {
             1,
         ),
         (
-            "Qual gás é essencial para a respiração humana?",
-            ["Oxigênio", "Hélio", "Hidrogênio", "Neônio"],
+            "Qual é o satélite natural da Terra?",
+            ["Sol", "Marte", "Lua", "Saturno"],
             0,
         ),
         (
@@ -77,21 +77,21 @@ DESAFIOS_FINAIS = (
     DesafioFinal(
         (220, 115, 70),
         "personagem-2-mesma-escala.png",
-        118,
+        118, 
         (
-            "Qual planeta e conhecido como Planeta Vermelho?",
-            ["Venus", "Marte", "Jupiter", "Saturno"],
-            1,
-        ),
+            "Qual linguagem e usada para estruturar paginas da internet?",
+            ["HTML", "Python", "SQL", "C++"],
+            0,
+        ),      
     ),
     DesafioFinal(
         (105, 180, 105),
         "ELIAS.png",
         118,
         (
-            "Qual linguagem e usada para estruturar paginas da internet?",
-            ["HTML", "Python", "SQL", "C++"],
-            0,
+            "Em que ano começou a Segunda Guerra Mundial?",
+            ["1918", "1935", "1939", "1945"],
+            2,
         ),
     ),
 )
