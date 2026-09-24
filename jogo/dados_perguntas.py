@@ -14,7 +14,7 @@ PERGUNTAS_POR_FASE = {
         (
             "Em qual continente fica o Egito?",
             ["Europa", "Ásia", "América do Sul", "África"],
-            2,
+            3,
         ),
         (
             "Qual é o maior oceano do mundo?",
@@ -28,7 +28,7 @@ PERGUNTAS_POR_FASE = {
     ],
     2: [
         ("Quanto é 7 x 8?", ["48", "54", "56", "64"], 2),
-        ("Qual é o número atômico do carbono?", ["4", "6", "8", "12"], 2),
+        ("Qual é o número atômico do carbono?", ["4", "6", "8", "12"], 1),
         ("Quanto é 35 + 27?", ["52", "60", "62", "72"], 2),
         ("Quantos lados possui um hexágono?", ["Cinco", "Seis", "Sete", "Oito"], 1),
     ],
@@ -46,7 +46,7 @@ PERGUNTAS_POR_FASE = {
         (
             "Qual é o satélite natural da Terra?",
             ["Sol", "Marte", "Lua", "Saturno"],
-            0,
+            2,
         ),
         (
             "A água congela normalmente a quantos graus Celsius?",
