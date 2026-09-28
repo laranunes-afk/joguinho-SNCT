@@ -79,9 +79,9 @@ DESAFIOS_FINAIS = (
         "personagem-2-mesma-escala.png",
         118, 
         (
-            "Qual linguagem e usada para estruturar paginas da internet?",
-            ["HTML", "Python", "SQL", "C++"],
-            0,
+            "Qual o maior continente do mundo?",
+            ["América do Sul", "África", "Ásia", "Europa"],
+            2,
         ),      
     ),
     DesafioFinal(
