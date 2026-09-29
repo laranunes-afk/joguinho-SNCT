@@ -1,9 +1,21 @@
 [
   {
+    "nome": "Miguel",
+    "tempo": 122,
+    "lupas": 160,
+    "pontos": 18390
+  },
+  {
     "nome": "saloti4",
     "tempo": 87,
     "lupas": 157,
     "pontos": 18265
+  },
+  {
+    "nome": "miguel",
+    "tempo": 107,
+    "lupas": 154,
+    "pontos": 17865
   },
   {
     "nome": "saloti6",
@@ -36,27 +48,15 @@
     "pontos": 16165
   },
   {
+    "nome": "miguel",
+    "tempo": 106,
+    "lupas": 134,
+    "pontos": 15870
+  },
+  {
     "nome": "fuentes",
     "tempo": 99,
     "lupas": 133,
     "pontos": 15805
-  },
-  {
-    "nome": "fuentes",
-    "tempo": 74,
-    "lupas": 131,
-    "pontos": 15730
-  },
-  {
-    "nome": "saloti3",
-    "tempo": 84,
-    "lupas": 131,
-    "pontos": 15680
-  },
-  {
-    "nome": "lara",
-    "tempo": 66,
-    "lupas": 128,
-    "pontos": 15470
   }
 ]
